@@ -10,10 +10,9 @@
 
 namespace recsys {
 
-enum class StartupError { AllocFailed };
 enum class SearchError { InvalidQuery };
 
-folly::Expected<std::unique_ptr<MemoryArena>, AllocError>
+folly::Expected<std::unique_ptr<MemoryArena>, StartupError>
 StartServiceAndCreateArena(size_t item_count, size_t embedding_dim,
                            EmbeddingDataType type);
 

@@ -41,7 +41,7 @@ void ComputeAllDistancesInBatch<float>(
     const float* search_2 = arena_base + active_ids[i + 2] * embedding_dim;
     const float* search_3 = arena_base + active_ids[i + 3] * embedding_dim;
 
-    for (int idx = 0; idx < embedding_dim; idx += 4) {
+    for (size_t idx = 0; idx < embedding_dim; idx += 4) {
       float32x4_t query = vld1q_f32(&query_vector[idx]);
 
       float32x4_t s0 = vld1q_f32(&search_0[idx]);

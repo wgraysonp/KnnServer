@@ -10,15 +10,17 @@
 
 namespace recsys {
 
-folly::Expected<std::unique_ptr<MemoryArena>, AllocError>
+folly::Expected<std::unique_ptr<MemoryArena>, StartupError>
 StartServiceAndCreateArena(size_t item_count, size_t embedding_dim,
                            EmbeddingDataType type) {
   return MemoryArena::MakeArena(item_count, embedding_dim, type)
       .then([item_count, embedding_dim](std::unique_ptr<MemoryArena> arena)
-                -> folly::Expected<std::unique_ptr<MemoryArena>, AllocError> {
+                -> folly::Expected<std::unique_ptr<MemoryArena>, StartupError> {
         for (size_t i = 0; i < item_count; ++i) {
           std::vector<float> test_vec(embedding_dim, i == 0 ? 0.5f : 0.3f);
-          RETURN_IF_ERROR(arena->SetEntry(i, test_vec));
+          if(!arena->SetEntry(i, test_vec)){
+            return folly::makeUnexpected(StartupError::Unknown);
+          }
         }
         return arena;
       });

@@ -76,18 +76,22 @@ folly::Expected<folly::Unit, AllocError> MemoryArena::SetEntry(
       });
 }
 
-folly::Expected<std::unique_ptr<MemoryArena>, AllocError>
+folly::Expected<std::unique_ptr<MemoryArena>, StartupError>
 MemoryArena::MakeArena(size_t capacity, size_t embedding_dim,
                        EmbeddingDataType type) {
   try {
-    auto arena = std::unique_ptr<MemoryArena>(
+    return std::unique_ptr<MemoryArena>(
         new MemoryArena(capacity, embedding_dim, type));
-    return arena;
   } catch (const std::runtime_error& e) {
     std::cerr << "Error: " << e.what() << std::endl;
-    return folly::makeUnexpected(AllocError::BadAlloc);
+    return folly::makeUnexpected(StartupError::MMAPFailure);
+  } catch (const std::invalid_argument& e){
+    std::cerr << "Error: " << e.what() << std::endl;
+    return folly::makeUnexpected(StartupError::ArenaInvalidArgument);
+  } catch (...) {
+    std::cerr << "Unknown startup error.." << std::endl;
+    return folly::makeUnexpected(StartupError::Unknown);
   }
-  return folly::makeUnexpected(AllocError::NotFound);
 }
 
 folly::Expected<size_t, InvalidArgmentError> MemoryArena::GetTypeSize(

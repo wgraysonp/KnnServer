@@ -21,6 +21,13 @@ enum class AllocError {
   IncorrectEmbeddingDim
 };
 
+enum class StartupError {
+  ArenaInvalidArgument,
+  MMAPFailure,
+  DataLoadError,
+  Unknown
+};
+
 class MemoryArena {
  public:
   ~MemoryArena();
@@ -44,7 +51,7 @@ class MemoryArena {
   folly::Expected<folly::Unit, AllocError> SetEntry(
       unsigned long index, std::span<const double> embedding);
 
-  static folly::Expected<std::unique_ptr<MemoryArena>, AllocError> MakeArena(
+  static folly::Expected<std::unique_ptr<MemoryArena>, StartupError> MakeArena(
       size_t capacity, size_t embedding_dim, EmbeddingDataType type);
 
  private:
