@@ -24,7 +24,7 @@ MemoryArena::MemoryArena(size_t capacity, size_t embedding_dim,
   folly::Expected<size_t, InvalidArgmentError> embedding_entry_size =
       GetTypeSize(type_);
   if (!embedding_entry_size) {
-    throw std::invalid_argument("Invalid embedding type");
+    throw std::invalid_argument("Invalid embedding datatype");
   }
 
   type_size_ = *embedding_entry_size;

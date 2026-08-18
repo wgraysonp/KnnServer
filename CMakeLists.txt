@@ -17,12 +17,13 @@ if(APPLE)
     link_directories(/opt/homebrew/lib)
 endif()
 
-#add_library(folly /opt/homebrew/include/folly)
 add_library(threads src/threads/threadpool.cpp)
 add_library(arena_memory src/arena.cpp)
 add_library(distance src/distance.cpp)
+add_library(search src/search.cpp)
+add_library(pipelines src/service/pipelines.cc)
 
-foreach(target arena_memory distance threads)
+foreach(target arena_memory distance threads search pipelines)
     target_compile_options(${target} PRIVATE "-mcpu=apple-m2")
     target_compile_options(${target} PRIVATE $<$<CONFIG:Debug>:-Wall -Wextra -g>)
     target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:-O2>)
@@ -31,6 +32,8 @@ endforeach()
 target_include_directories(arena_memory PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(distance PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(threads PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(search PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(pipelines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(recsys_app apps/main.cpp)
 target_include_directories(recsys_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -39,6 +42,8 @@ target_link_libraries(recsys_app PRIVATE
           arena_memory
           distance
           threads
+          pipelines
+          search
           Folly::folly
           Threads::Threads
  )

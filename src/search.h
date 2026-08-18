@@ -27,14 +27,28 @@ struct CompareResult {
 };
 
 template <typename T>
+void ComputeAllDistancesInBatch(KnnResult<T>* batch_results,
+                                const std::vector<unsigned long>& active_ids,
+                                const T* arena_base, const T* query_vector,
+                                size_t embedding_dim, size_t start, size_t end);
+
+template <typename T>
+std::vector<KnnResult<T>> FindNClosestInChunk(
+    const std::vector<unsigned long>& active_ids, const T* arena_base,
+    const T* query_vector, size_t n_closest, size_t embedding_dim,
+    size_t chunk_start, size_t chunk_end);
+
+template <typename T>
 std::vector<KnnResult<T>> ComputeInitialCanidiateEmbeddings(
     const MemoryArena& arena, const std::vector<T>& query_vector,
     size_t n_closest) {
-  const auto& active_ids = arena.GetActiveIds();
-  size_t total_items = active_ids.size();
-  const T* arena_base = arena.GetArenaView<T>().data();
-  size_t embedding_dim = arena.GetEmbeddingDim();
+  const std::vector<unsigned long>& active_ids = arena.GetActiveIds();
+
   const T* query_data = query_vector.data();
+  const T* arena_base = arena.GetArenaView<T>().data();
+
+  size_t total_items = active_ids.size();
+  size_t embedding_dim = arena.GetEmbeddingDim();
 
   ThreadPool bundle = ThreadPool();
   size_t n_workers = bundle.GetPoolSize();
@@ -43,42 +57,15 @@ std::vector<KnnResult<T>> ComputeInitialCanidiateEmbeddings(
   size_t remainder = total_items % n_workers;
   size_t start = 0;
   std::vector<std::future<std::vector<KnnResult<T>>>> search_results;
+
   for (size_t i = 0; i < n_workers; ++i) {
     size_t chunk_size = embeddings_per_worker + (i < remainder ? 1 : 0);
     size_t end = start + chunk_size;
     search_results.emplace_back(
         bundle.Add([&arena_base, &embedding_dim, &query_data, &n_closest,
                     &active_ids, start, end]() {
-          std::priority_queue<KnnResult<T>, std::vector<KnnResult<T>>,
-                              CompareResult<T>>
-              closest_n_queue;
-          size_t processed_embeddings = 0;
-          for (size_t j = start; j < end; ++j) {
-            unsigned long id = active_ids[j];
-            const T* embedding = arena_base + id * embedding_dim;
-            // TODO(grayson) - Fix this to load the query data into the
-            // registers
-            //  first before the loop executes.
-            double distance = NeonComputeSquaredEuclideanDistance<T>(
-                query_data, embedding, embedding_dim);
-            if (processed_embeddings < n_closest) {
-              closest_n_queue.push(KnnResult<T>{embedding, id, distance});
-              processed_embeddings++;
-              continue;
-            }
-            if (distance < closest_n_queue.top().dist) {
-              closest_n_queue.pop();
-              closest_n_queue.push(KnnResult<T>{embedding, id, distance});
-            }
-          }
-
-          std::vector<KnnResult<T>> query_result;
-          while (!closest_n_queue.empty()) {
-            KnnResult<T> res = closest_n_queue.top();
-            query_result.push_back(std::move(res));
-            closest_n_queue.pop();
-          }
-          return query_result;
+          return FindNClosestInChunk(active_ids, arena_base, query_data,
+                                     n_closest, embedding_dim, start, end);
         }));
     start = end;
   }
@@ -99,7 +86,7 @@ std::vector<KnnResult<T>> FindNClosest(const MemoryArena& arena,
                                        size_t n_closest) {
   std::vector<KnnResult<T>> candidates =
       ComputeInitialCanidiateEmbeddings(arena, query_vector, n_closest);
-  
+
   std::nth_element(candidates.begin(), candidates.begin() + n_closest,
                    candidates.end(),
                    [](const KnnResult<T>& a, const KnnResult<T>& b) {
