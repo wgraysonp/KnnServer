@@ -10,8 +10,18 @@ TEST_F(MemoryArenaTests,
        MakeArenaFailsIfEmbeddingDimensionNotAMultipleOfSixteen) {
   size_t capacity = 10;
   size_t embedding_dim = 237;
-  auto arena =
-      MemoryArena::MakeArena(10, embedding_dim, EmbeddingDataType::Float32_t);
+  auto arena = MemoryArena::MakeArena(capacity, embedding_dim,
+                                      EmbeddingDataType::Float32_t);
   ASSERT_FALSE(arena);
   EXPECT_EQ(arena.error(), StartupError::ArenaInvalidArgument);
+}
+
+TEST_F(MemoryArenaTests, MakeArenaReturnsErrorOnMMAPFailure) {
+  // request 0 bytes from mmap
+  size_t capacity = 0;
+  size_t embedding_dim = 16;
+  auto arena = MemoryArena::MakeArena(capacity, embedding_dim,
+                                      EmbeddingDataType::Float32_t);
+  ASSERT_FALSE(arena);
+  EXPECT_EQ(arena.error(), StartupError::MMAPFailure);
 }
