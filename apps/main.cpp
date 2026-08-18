@@ -1,24 +1,51 @@
-#include "src/arena.h"
+#include <folly/Expected.h>
 
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <memory>
 #include <vector>
+
+#include "src/arena.h"
+#include "src/consts.h"
+#include "src/macros.h"
+#include "src/search.h"
 
 using namespace recsys;
 
-int main(){
-    std::cout << 
-      "Initializing memory arena via Cmake configuration..." << std::endl;
+int main() {
+  std::cout << "Initializing memory arena via Cmake configuration..."
+            << std::endl;
 
-    size_t item_count = 10000000;
-    auto arena = 
-      MemoryArena<float>::CreateForObjects(item_count*EMBEDDING_DIM);
-    std::vector<Item<float>> catalog;
-    catalog.reserve(item_count);
+  size_t item_count = 10000000;
+  std::unique_ptr<MemoryArena> arena;
+  CHECK_OK_AND_ASSIGN(arena,
+                      MemoryArena::MakeArena(item_count, EMBEDDING_DIM,
+                                             EmbeddingDataType::Float32_t));
 
-    for (size_t i = 0; i < item_count; ++i){
-      if (!arena.Allocate(EMBEDDING_DIM)) break;
-    }
-    return 0;
+  for (size_t i = 0; i < item_count; ++i) {
+    std::vector<float> test_vec(EMBEDDING_DIM, i == 0 ? 0.5f : 0.3f);
+    arena->SetEntry(i, test_vec);
+    //CHECK_OK(arena->SetEntry(i, test_vec));
+  }
+
+  std::cout << "Initialization complete. Starting search" << std::endl;
+
+  std::vector<float> query_vector(EMBEDDING_DIM, 0.5f);
+
+  auto start = std::chrono::high_resolution_clock::now();
+
+  std::vector<KnnResult<float>> result =
+      FindNClosest<float>(*arena, query_vector, 10);
+
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::milli> duration = end - start;
+  std::cout << "KNN Search took: " << duration.count() << " ms\n";
+
+  printf("Number of Items: %lu\n", result.size());
+  for (const auto& item : result) {
+    printf("Vector id: %lu\n", item.id);
+  }
+
+  return 0;
 }

@@ -1,58 +1,86 @@
 #ifndef RECSYS_ENGINE_ARENA_H_
 #define RECSYS_ENGINE_ARENA_H_
 
+#include <folly/Expected.h>
+
 #include <cstddef>
+#include <iostream>
+#include <memory>
 #include <new>
+#include <span>
 #include <vector>
+
+#include "src/consts.h"
 
 namespace recsys {
 
-constexpr size_t EMBEDDING_DIM = 128;
-
-template <typename T>
-struct Item {
-    unsigned long id;
-    const T* embedding;
+enum class AllocError {
+  BadAlloc,
+  NotFound,
+  TypeDisagreesWithEmbeddingType,
+  IncorrectEmbeddingDim
 };
 
-template <typename T>
 class MemoryArena {
-  public:
-    ~MemoryArena();
-    MemoryArena(const MemoryArena&) = delete;
-    MemoryArena& operator=(const MemoryArena&) = delete;
-    MemoryArena(MemoryArena&&) noexcept = default;
-    MemoryArena& operator=(MemoryArena&&) noexcept = default;
+ public:
+  ~MemoryArena();
+  MemoryArena(const MemoryArena&) = delete;
+  MemoryArena& operator=(const MemoryArena&) = delete;
+  MemoryArena(MemoryArena&&) noexcept = default;
+  MemoryArena& operator=(MemoryArena&&) noexcept = default;
 
-    static MemoryArena<T> CreateForObjects(size_t n_objects){
-      size_t total_bytes = n_objects*sizeof(T);
-      return MemoryArena<T>(total_bytes);
+  size_t GetCapacity() const { return capacity_; }
+  size_t GetEmbeddingDim() const { return embedding_dim_; }
+  const std::vector<unsigned long>& GetActiveIds() const { return active_ids_; }
+
+  template <typename T>
+  std::span<const T> GetArenaView() const {
+    return std::span(static_cast<T*>(arena_base_ptr_),
+                     capacity_ * embedding_dim_);
+  }
+
+  folly::Expected<folly::Unit, AllocError> SetEntry(
+      unsigned long index, std::span<const float> embedding);
+  folly::Expected<folly::Unit, AllocError> SetEntry(
+      unsigned long index, std::span<const double> embedding);
+
+  static folly::Expected<std::unique_ptr<MemoryArena>, AllocError> MakeArena(
+      size_t capacity, size_t embedding_dim, EmbeddingDataType type);
+
+ private:
+  MemoryArena(size_t capacity, size_t embedding_dim, EmbeddingDataType type);
+  static folly::Expected<size_t, InvalidArgmentError> GetTypeSize(
+      EmbeddingDataType type);
+
+  template <typename T>
+  folly::Expected<folly::Unit, AllocError> ValidateAddedEmbedding(
+      size_t index, std::span<const T> embedding) {
+    if (sizeof(T) != type_size_) {
+      return folly::makeUnexpected(AllocError::TypeDisagreesWithEmbeddingType);
     }
 
-    bool Allocate(size_t n_objects, size_t alignment=16){
-      size_t bytes = n_objects*sizeof(T);
-      void* mem = AllocateBytes(bytes, alignment);
-      if (!mem) {
-        return false;
-      }
-      catalog_.push_back(Item<T>{item_count_++, static_cast<T*>(mem)});
-      return true;
+    if (embedding.size() != embedding_dim_) {
+      std::cerr << "Embedding dimension in correct."
+                << "Expected " << embedding_dim_ << " But got "
+                << embedding.size() << std::endl;
+      return folly::makeUnexpected(AllocError::IncorrectEmbeddingDim);
     }
-    size_t bytes_used() const { return offset_; }
-    size_t capacity() const { return capacity_; }
-    size_t n_items() const { return item_count_; }
-    const std::vector<Item<T>>& GetCatalog() const { return catalog_;}
+    if (index >= capacity_) {
+      std::cerr << "No memory allocated for item " << index << std::endl;
+      return folly::makeUnexpected(AllocError::NotFound);
+    }
+    return folly::unit;
+  }
 
-  private:
-    std::vector<Item<T>> catalog_;
-    void* raw_ptr_;
-    size_t capacity_;
-    size_t offset_;
-    size_t item_count_;
-    
-    MemoryArena(size_t total_bytes);
-    void* AllocateBytes(size_t bytes, size_t alignment = 16);
+  std::vector<uint8_t> is_id_active_;
+  std::vector<unsigned long> active_ids_;
+  EmbeddingDataType type_;
+  void* arena_base_ptr_;
+  size_t capacity_;
+  size_t embedding_dim_;
+  size_t type_size_;
 };
-} // namespace recsys
 
-#endif // RECSYS_ENGINE_ARENA_H_
+}  // namespace recsys
+
+#endif  // RECSYS_ENGINE_ARENA_H_

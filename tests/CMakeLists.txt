@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.15)
+project(recsys_tests CXX)
+
+# Get GoogleTest
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        v1.15.2
+)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
+add_executable(run_threadpool_tests threadpool_test.cpp)
+target_include_directories(run_threadpool_tests PRIVATE ${CMAKE_SOURCE_DIR})
+
+target_link_libraries(run_threadpool_tests PRIVATE GTest::gtest_main)
+target_link_libraries(run_threadpool_tests PRIVATE threads)
+include(GoogleTest)
+gtest_discover_tests(run_threadpool_tests DISCOVERY_MODE PRE_TEST)
