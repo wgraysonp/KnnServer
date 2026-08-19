@@ -21,13 +21,9 @@ MemoryArena::MemoryArena(size_t capacity, size_t embedding_dim,
     throw std::invalid_argument("Embedding dimesion must be a multple of 16");
   }
 
-  folly::Expected<size_t, InvalidArgmentError> embedding_entry_size =
-      GetTypeSize(type_);
-  if (!embedding_entry_size) {
-    throw std::invalid_argument("Invalid embedding datatype");
-  }
-
-  type_size_ = *embedding_entry_size;
+  size_t embedding_entry_size =GetTypeSize(type_);
+  type_size_ = embedding_entry_size;
+  
   size_t total_bytes = capacity_ * embedding_dim_ * type_size_;
 
   arena_base_ptr_ = mmap(nullptr, total_bytes, PROT_READ | PROT_WRITE,
@@ -94,15 +90,13 @@ MemoryArena::MakeArena(size_t capacity, size_t embedding_dim,
   }
 }
 
-folly::Expected<size_t, InvalidArgmentError> MemoryArena::GetTypeSize(
+size_t MemoryArena::GetTypeSize(
     EmbeddingDataType type) {
   switch (type) {
     case EmbeddingDataType::Float32_t:
       return 4;
     case EmbeddingDataType::Float64_t:
       return 8;
-    default:
-      return folly::makeUnexpected(InvalidArgmentError::EnumTypeUndefined);
   }
 }
 }  // namespace recsys

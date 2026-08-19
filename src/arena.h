@@ -56,7 +56,7 @@ class MemoryArena {
 
  private:
   MemoryArena(size_t capacity, size_t embedding_dim, EmbeddingDataType type);
-  static folly::Expected<size_t, InvalidArgmentError> GetTypeSize(
+  static size_t GetTypeSize(
       EmbeddingDataType type);
 
   template <typename T>

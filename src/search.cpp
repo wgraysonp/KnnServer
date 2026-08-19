@@ -30,7 +30,8 @@ void ComputeAllDistancesInBatch<float>(
     const float* query_vector, size_t embedding_dim, size_t start, size_t end) {
   int processed_count = 0;
 
-  for (unsigned long i = start; i < std::min(end, active_ids.size()); i += 4) {
+  for (unsigned long i = start; i < std::min(end, active_ids.size());
+       i += NUM_NEON_PIPELINES) {
     float32x4_t out0 = vmovq_n_f32(0.0);
     float32x4_t out1 = vmovq_n_f32(0.0);
     float32x4_t out2 = vmovq_n_f32(0.0);
@@ -60,8 +61,8 @@ void ComputeAllDistancesInBatch<float>(
       out3 = vfmaq_f32(out3, sub3, sub3);
     }
 
-    batch_results[processed_count] =
-        KnnResult<float>{search_0, active_ids[i], static_cast<double>(vaddvq_f32(out0))};
+    batch_results[processed_count] = KnnResult<float>{
+        search_0, active_ids[i], static_cast<double>(vaddvq_f32(out0))};
     batch_results[processed_count + 1] = KnnResult<float>{
         search_1, active_ids[i + 1], static_cast<double>(vaddvq_f32(out1))};
     batch_results[processed_count + 2] = KnnResult<float>{

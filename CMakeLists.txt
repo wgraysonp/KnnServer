@@ -25,7 +25,7 @@ add_library(pipelines src/service/pipelines.cc)
 
 foreach(target arena_memory distance threads search pipelines)
     target_compile_options(${target} PRIVATE "-mcpu=apple-m2")
-    target_compile_options(${target} PRIVATE $<$<CONFIG:Debug>:-Wall -Wextra -g>)
+    target_compile_options(${target} PRIVATE $<$<CONFIG:Debug>:-Wall -Wextra -Werror -g>)
     target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:-O2>)
 endforeach()
 

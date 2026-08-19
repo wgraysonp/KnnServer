@@ -6,7 +6,13 @@
 namespace recsys {
   constexpr size_t EMBEDDING_DIM = 128;
   constexpr size_t BATCH_SIZE = 256;
-  enum class EmbeddingDataType {Float64_t, Float32_t};
+  constexpr size_t NUM_NEON_PIPELINES = 4;
+
+  enum class EmbeddingDataType {
+    Float64_t, 
+    Float32_t,
+  };
+
   enum class InvalidArgmentError{
     EnumTypeUndefined,
     TypeDisagreesWithArenaType,

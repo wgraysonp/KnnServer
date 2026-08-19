@@ -4,9 +4,11 @@
 #include <folly/Expected.h>
 
 #include <memory>
+#include <vector>
 
 #include "src/arena.h"
 #include "src/consts.h"
+#include "src/data/structs.h"
 
 namespace recsys {
 
@@ -20,6 +22,12 @@ StartServiceAndCreateArena(size_t item_count, size_t embedding_dim,
 // closest vectors
 folly::Expected<std::vector<float>, SearchError>
 ProcessRequestAndReturnSearchResults();
+
+// Temporary implementation assuming the request consists only of a single
+// float vector.
+// TODO: This should be updated to handle a full http or protobuf request
+folly::Expected<folly::Unit, SearchError> ValidateSearchRequest(
+    const QueryRequest& request);
 
 }  // namespace recsys
 #endif  // RECSYS_ENGINE_SERVICE_PIPELINES_H_
