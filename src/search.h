@@ -27,10 +27,31 @@ struct CompareResult {
 };
 
 template <typename T>
+using KnnPriorityQueue =
+    std::priority_queue<KnnResult<T>, std::vector<KnnResult<T>>,
+                        CompareResult<T>>;
+
+template <typename T>
 void ComputeAllDistancesInBatch(KnnResult<T>* batch_results,
                                 const std::vector<unsigned long>& active_ids,
                                 const T* arena_base, const T* query_vector,
                                 size_t embedding_dim, size_t start, size_t end);
+
+template <typename T>
+void UpdateNClosestInChunkWithNewDistances(KnnResult<T>* batch_results,
+                                           KnnPriorityQueue<T>& mutable_queue,
+                                           size_t n_closest) {
+  for (size_t res_idx = 0; res_idx < BATCH_SIZE; ++res_idx) {
+    if (mutable_queue.size() < n_closest) {
+      mutable_queue.push(batch_results[res_idx]);
+      continue;
+    }
+    if (batch_results[res_idx].dist < mutable_queue.top().dist) {
+      mutable_queue.pop();
+      mutable_queue.push(batch_results[res_idx]);
+    }
+  }
+}
 
 template <typename T>
 std::vector<KnnResult<T>> FindNClosestInChunk(

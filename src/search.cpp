@@ -79,29 +79,21 @@ std::vector<KnnResult<float>> FindNClosestInChunk<float>(
     const std::vector<unsigned long>& active_ids, const float* arena_base,
     const float* query_vector, size_t n_closest, size_t embedding_dim,
     size_t chunk_start, size_t chunk_end) {
-  std::priority_queue<KnnResult<float>, std::vector<KnnResult<float>>,
-                      CompareResult<float>>
-      closest_n_queue;
+  KnnPriorityQueue<float> closest_n_queue;
 
   KnnResult<float> batch_results[BATCH_SIZE];
 
   for (size_t batch_start = chunk_start; batch_start < chunk_end;
        batch_start += BATCH_SIZE) {
     size_t batch_end = batch_start + BATCH_SIZE;
+
     ComputeAllDistancesInBatch<float>(batch_results, active_ids, arena_base,
                                       query_vector, embedding_dim, batch_start,
                                       batch_end);
 
-    for (size_t res_idx = 0; res_idx < BATCH_SIZE; ++res_idx) {
-      if (closest_n_queue.size() < n_closest) {
-        closest_n_queue.push(batch_results[res_idx]);
-        continue;
-      }
-      if (batch_results[res_idx].dist < closest_n_queue.top().dist) {
-        closest_n_queue.pop();
-        closest_n_queue.push(batch_results[res_idx]);
-      }
-    }
+    UpdateNClosestInChunkWithNewDistances(batch_results, closest_n_queue,
+                                          n_closest);
+
     batch_start = batch_end;
   }
   std::vector<KnnResult<float>> chunk_results;
