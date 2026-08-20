@@ -9,7 +9,7 @@ set(Boost_NO_BOOST_CMAKE OFF)
 
 list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew")
 
-find_package(folly REQUIRED)
+find_package(folly CONFIG REQUIRED)
 find_package(Threads REQUIRED)
 
 if(APPLE)
@@ -21,9 +21,32 @@ add_subdirectory(src/data)
 add_subdirectory(src/service)
 
 add_library(threads src/threads/threadpool.cpp)
+target_include_directories(threads PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(arena_memory src/arena.cpp)
+target_link_libraries(arena_memory 
+        PUBLIC 
+            service_module
+            data_module
+        PRIVATE
+            Folly::folly
+)
+target_include_directories(arena_memory PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(distance src/distance.cpp)
+target_include_directories(distance PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(search src/search.cpp)
+target_link_libraries(search 
+        PUBLIC
+            arena_memory
+        PRIVATE
+            service_module
+            data_module
+            threads
+            Folly::folly
+)
+target_include_directories(search PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 foreach(target arena_memory distance threads search)
     target_compile_options(${target} PRIVATE "-mcpu=apple-m2")
@@ -31,24 +54,20 @@ foreach(target arena_memory distance threads search)
     target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:-O2>)
 endforeach()
 
-target_include_directories(arena_memory PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(distance PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(threads PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(search PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(recsys_app apps/main.cpp)
-target_include_directories(recsys_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
 target_link_libraries(recsys_app PRIVATE
-          data_module
-          service_module
+          search
           arena_memory
           distance
           threads
-          search
+          service_module
+          data_module
           Folly::folly
+          Folly::folly_deps
           Threads::Threads
  )
+ target_include_directories(recsys_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 option(BUILD_TESTING "Build the test suite" ON)
 if(BUILD_TESTING)

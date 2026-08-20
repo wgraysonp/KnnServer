@@ -1,11 +1,12 @@
 #ifndef RECSYS_ENGINE_SEARCH_H_
 #define RECSYS_ENGINE_SEARCH_H_
 
+#include <folly/FBVector.h>
+
 #include <algorithm>
 #include <memory>
 #include <optional>
 #include <queue>
-#include <vector>
 
 #include "src/arena.h"
 #include "src/data/structs.h"
@@ -24,21 +25,21 @@ struct CompareResult {
 
 using KnnPriorityQueue =
     std::priority_queue<EmbeddingSearchResult,
-                        std::vector<EmbeddingSearchResult>, CompareResult>;
+                        folly::fbvector<EmbeddingSearchResult>, CompareResult>;
 
 template <typename T>
-void ComputeAllDistancesInBatch(EmbeddingSearchResult* batch_results,
-                                const std::vector<unsigned long>& active_ids,
-                                const T* arena_base, const T* query_vector,
-                                size_t embedding_dim, size_t start, size_t end);
+void ComputeAllDistancesInBatch(
+    EmbeddingSearchResult* batch_results,
+    const folly::fbvector<unsigned long>& active_ids, const T* arena_base,
+    const T* query_vector, size_t embedding_dim, size_t start, size_t end);
 
 void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
                                            KnnPriorityQueue& mutable_queue,
                                            size_t n_closest);
 
 template <typename T>
-std::vector<EmbeddingSearchResult> FindNClosestInChunk(
-    const std::vector<unsigned long>& active_ids, const T* arena_base,
+folly::fbvector<EmbeddingSearchResult> FindNClosestInChunk(
+    const folly::fbvector<unsigned long>& active_ids, const T* arena_base,
     const T* query_vector, size_t n_closest, size_t embedding_dim,
     size_t chunk_start, size_t chunk_end) {
   KnnPriorityQueue closest_n_queue;
@@ -55,7 +56,7 @@ std::vector<EmbeddingSearchResult> FindNClosestInChunk(
     UpdateNClosestInChunkWithNewDistances(batch_results, closest_n_queue,
                                           n_closest);
   }
-  std::vector<EmbeddingSearchResult> chunk_results;
+  folly::fbvector<EmbeddingSearchResult> chunk_results;
 
   while (!closest_n_queue.empty()) {
     EmbeddingSearchResult res = closest_n_queue.top();
@@ -66,10 +67,10 @@ std::vector<EmbeddingSearchResult> FindNClosestInChunk(
 }
 
 template <typename T>
-std::vector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
-    const MemoryArena& arena, const std::vector<T>& query_vector,
+folly::fbvector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
+    const MemoryArena& arena, const folly::fbvector<T>& query_vector,
     size_t n_closest) {
-  const std::vector<unsigned long>& active_ids = arena.GetActiveIds();
+  const folly::fbvector<unsigned long>& active_ids = arena.GetActiveIds();
 
   const T* query_data = query_vector.data();
   const T* arena_base = arena.GetArenaView<T>().data();
@@ -83,7 +84,8 @@ std::vector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
   size_t embeddings_per_worker = total_items / n_workers;
   size_t remainder = total_items % n_workers;
   size_t start = 0;
-  std::vector<std::future<std::vector<EmbeddingSearchResult>>> search_results;
+  folly::fbvector<std::future<folly::fbvector<EmbeddingSearchResult>>>
+      search_results;
 
   for (size_t i = 0; i < n_workers; ++i) {
     size_t chunk_size = embeddings_per_worker + (i < remainder ? 1 : 0);
@@ -97,7 +99,7 @@ std::vector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
     start = end;
   }
 
-  std::vector<EmbeddingSearchResult> return_vec;
+  folly::fbvector<EmbeddingSearchResult> return_vec;
 
   for (auto& fut : search_results) {
     auto res = fut.get();
@@ -108,10 +110,10 @@ std::vector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
 }
 
 template <typename T>
-std::vector<EmbeddingSearchResult> FindNClosest(
-    const MemoryArena& arena, const std::vector<T>& query_vector,
+folly::fbvector<EmbeddingSearchResult> FindNClosest(
+    const MemoryArena& arena, const folly::fbvector<T>& query_vector,
     size_t n_closest) {
-  std::vector<EmbeddingSearchResult> candidates =
+  folly::fbvector<EmbeddingSearchResult> candidates =
       ComputeInitialCanidiateEmbeddings(arena, query_vector, n_closest);
 
   std::nth_element(

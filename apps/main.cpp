@@ -1,13 +1,13 @@
+#include <folly/Expected.h>
+#include <folly/FBVector.h>
+
 #include <chrono>
 #include <cmath>
 #include <iostream>
 #include <memory>
-#include <vector>
 
-#include <folly/Expected.h>
-
-#include "src/data/types.h"
 #include "src/arena.h"
+#include "src/data/types.h"
 #include "src/macros.h"
 #include "src/search.h"
 #include "src/service/pipelines.h"
@@ -28,11 +28,11 @@ int main() {
 
   std::cout << "Initialization complete. Starting search" << std::endl;
 
-  std::vector<float> query_vector(EMBEDDING_DIM, 0.5f);
+  folly::fbvector<float> query_vector(EMBEDDING_DIM, 0.5f);
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  std::vector<EmbeddingSearchResult> result =
+  folly::fbvector<EmbeddingSearchResult> result =
       FindNClosest<float>(*arena, query_vector, 10);
 
   auto end = std::chrono::high_resolution_clock::now();

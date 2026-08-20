@@ -1,6 +1,8 @@
 #ifndef RECSYS_ENGINE_STRUCTS_H_
 #define RECSYS_ENGINE_STRUCTS_H_
 
+#include <folly/FBVector.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -15,7 +17,7 @@ struct EmbeddingSearchResult {
 };
 
 struct QueryRequest {
-  std::vector<uint8_t> query_vector;
+  folly::fbvector<uint8_t> query_vector;
   EmbeddingDataType type;
   size_t library_id;
   size_t embedding_dim;
@@ -26,7 +28,7 @@ struct QueryRequest {
 struct QueryResponse {
   ResponseStatus status;
   std::optional<uint64_t> micros_passed = std::nullopt;
-  std::optional<std::vector<EmbeddingSearchResult>> nearest_neighbors =
+  std::optional<folly::fbvector<EmbeddingSearchResult>> nearest_neighbors =
       std::nullopt;
 };
 

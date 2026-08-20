@@ -1,11 +1,11 @@
 #include "src/search.h"
 
 #include <arm_neon.h>
+#include <folly/FBVector.h>
 
 #include <algorithm>
 #include <memory>
 #include <queue>
-#include <vector>
 
 #include "src/arena.h"
 
@@ -26,7 +26,7 @@ double ComputeSquaredEuclideanDistance<float>(const float* a, const float* b,
 template <>
 void ComputeAllDistancesInBatch<float>(
     EmbeddingSearchResult* batch_results,
-    const std::vector<unsigned long>& active_ids, const float* arena_base,
+    const folly::fbvector<unsigned long>& active_ids, const float* arena_base,
     const float* query_vector, size_t embedding_dim, size_t start, size_t end) {
   int processed_count = 0;
 

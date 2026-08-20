@@ -2,13 +2,13 @@
 #define RECSYS_ENGINE_ARENA_H_
 
 #include <folly/Expected.h>
+#include <folly/FBVector.h>
 
 #include <cstddef>
 #include <iostream>
 #include <memory>
 #include <new>
 #include <span>
-#include <vector>
 
 #include "src/data/structs.h"
 #include "src/data/types.h"
@@ -25,7 +25,9 @@ class MemoryArena {
 
   size_t GetCapacity() const { return capacity_; }
   size_t GetEmbeddingDim() const { return embedding_dim_; }
-  const std::vector<unsigned long>& GetActiveIds() const { return active_ids_; }
+  const folly::fbvector<unsigned long>& GetActiveIds() const {
+    return active_ids_;
+  }
 
   template <typename T>
   std::span<const T> GetArenaView() const {
@@ -65,8 +67,8 @@ class MemoryArena {
     return folly::unit;
   }
 
-  std::vector<uint8_t> is_id_active_;
-  std::vector<unsigned long> active_ids_;
+  folly::fbvector<bool> is_id_active_;
+  folly::fbvector<unsigned long> active_ids_;
   EmbeddingDataType type_;
   void* arena_base_ptr_;
   size_t capacity_;

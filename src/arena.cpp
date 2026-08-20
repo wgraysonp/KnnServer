@@ -1,6 +1,7 @@
 #include "src/arena.h"
 
 #include <folly/Expected.h>
+#include <folly/FBVector.h>
 #include <sys/mman.h>
 
 #include <cmath>
@@ -33,7 +34,7 @@ MemoryArena::MemoryArena(size_t capacity, size_t embedding_dim,
     throw std::runtime_error("mmap allocation failed");
   }
 
-  is_id_active_.assign(capacity_, 0);
+  is_id_active_.assign(capacity_, false);
 }
 
 MemoryArena::~MemoryArena() {
@@ -50,9 +51,9 @@ folly::Expected<folly::Unit, AllocError> MemoryArena::SetEntry(
         std::copy(
             embedding.begin(), embedding.end(),
             static_cast<float*>(arena_base_ptr_) + index * embedding_dim_);
-        if (is_id_active_[index] == 0) {
+        if (is_id_active_[index] == false) {
           active_ids_.push_back(index);
-          is_id_active_[index] = 1;
+          is_id_active_[index] = true;
         }
         return folly::unit;
       });
@@ -65,9 +66,9 @@ folly::Expected<folly::Unit, AllocError> MemoryArena::SetEntry(
         std::copy(
             embedding.begin(), embedding.end(),
             static_cast<double*>(arena_base_ptr_) + index * embedding_dim_);
-        if (is_id_active_[index] == 0) {
+        if (is_id_active_[index] == false) {
           active_ids_.push_back(index);
-          is_id_active_[index] = 1;
+          is_id_active_[index] = true;
         }
         return folly::unit;
       });
