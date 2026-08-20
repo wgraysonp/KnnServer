@@ -17,7 +17,7 @@ enum class SearchError { InvalidQuery };
 
 folly::Expected<std::unique_ptr<MemoryArena>, StartupError>
 StartServiceAndCreateArena(const size_t item_count, const size_t embedding_dim,
-                           const EmbeddingDataType type);
+                           const EmbeddingDataType& type);
 
 folly::Expected<QueryResponse, SearchError>
 ProcessRequestAndReturnSearchResults(const MemoryArena& arena,

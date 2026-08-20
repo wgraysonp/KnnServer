@@ -1,13 +1,13 @@
-#include <folly/Expected.h>
-
 #include <chrono>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <vector>
 
+#include <folly/Expected.h>
+
+#include "src/data/types.h"
 #include "src/arena.h"
-#include "src/consts.h"
 #include "src/macros.h"
 #include "src/search.h"
 #include "src/service/pipelines.h"
@@ -18,7 +18,7 @@ int main() {
   std::cout << "Initializing memory arena via Cmake configuration..."
             << std::endl;
 
-  size_t item_count = 100000000;
+  size_t item_count = 1000000;
 
   std::unique_ptr<MemoryArena> arena;
 

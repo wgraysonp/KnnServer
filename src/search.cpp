@@ -2,6 +2,7 @@
 
 #include <arm_neon.h>
 
+#include <algorithm>
 #include <memory>
 #include <queue>
 #include <vector>
@@ -70,6 +71,27 @@ void ComputeAllDistancesInBatch<float>(
         active_ids[i + 3], static_cast<double>(vaddvq_f32(out3))};
 
     processed_count += 4;
+  }
+}
+
+void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
+                                           KnnPriorityQueue& mutable_queue,
+                                           size_t n_closest) {
+  double worst_distance = std::numeric_limits<double>::min();
+  size_t n_processed = 0;
+
+  for (size_t res_idx = 0; res_idx < BATCH_SIZE; ++res_idx) {
+    if (n_processed < n_closest) {
+      mutable_queue.push(batch_results[res_idx]);
+      n_processed++;
+      worst_distance = std::max(worst_distance, batch_results[res_idx].dist);
+      continue;
+    }
+    if (batch_results[res_idx].dist < worst_distance) {
+      mutable_queue.pop();
+      mutable_queue.push(batch_results[res_idx]);
+      worst_distance = mutable_queue.top().dist;
+    }
   }
 }
 

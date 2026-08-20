@@ -34,18 +34,7 @@ void ComputeAllDistancesInBatch(EmbeddingSearchResult* batch_results,
 
 void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
                                            KnnPriorityQueue& mutable_queue,
-                                           size_t n_closest) {
-  for (size_t res_idx = 0; res_idx < BATCH_SIZE; ++res_idx) {
-    if (mutable_queue.size() < n_closest) {
-      mutable_queue.push(batch_results[res_idx]);
-      continue;
-    }
-    if (batch_results[res_idx].dist < mutable_queue.top().dist) {
-      mutable_queue.pop();
-      mutable_queue.push(batch_results[res_idx]);
-    }
-  }
-}
+                                           size_t n_closest);
 
 template <typename T>
 std::vector<EmbeddingSearchResult> FindNClosestInChunk(
