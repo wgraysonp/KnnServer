@@ -29,6 +29,12 @@ ValidateRequestSearchLibrary(const QueryRequest& request) {
   // available libraries in some way and checking if the library exists. I will
   // problably need to make some sort of config file for this and parse it.
 
+  // temp placeholder to use request and keep Werror from complaning
+  if (request.library_id == 0) {
+    return folly::makeUnexpected(
+        RequestValidationError::SearchLibraryNotFoundError);
+  }
+
   return folly::unit;
 }
 
