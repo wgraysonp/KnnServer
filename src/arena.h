@@ -30,9 +30,8 @@ class MemoryArena {
   }
 
   template <typename T>
-  std::span<const T> GetArenaView() const {
-    return std::span(static_cast<T*>(arena_base_ptr_),
-                     capacity_ * embedding_dim_);
+  const T* GetArenaView() const {
+    return static_cast<T*>(arena_base_ptr_);
   }
 
   folly::Expected<folly::Unit, AllocError> SetEntry(
@@ -62,7 +61,7 @@ class MemoryArena {
     }
     if (index >= capacity_) {
       std::cerr << "No memory allocated for item " << index << std::endl;
-      return folly::makeUnexpected(AllocError::NotFound);
+      return folly::makeUnexpected(AllocError::RequestedIDAboveCapcity);
     }
     return folly::unit;
   }

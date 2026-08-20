@@ -1,6 +1,7 @@
 #include "src/arena.h"
 
 #include <folly/Expected.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <cstddef>
@@ -80,10 +81,12 @@ TEST_F(MemoryArenaTests, SetDoubleEntryFailsWithInvalidEmbeddingDataType) {
             AllocError::TypeDisagreesWithEmbeddingType);
 }
 
-template<typename T>
+template <typename T>
 class MemoryArenaTypedTests : public ::testing::Test {};
 
 using namespace recsys;
+using ::testing::FloatEq;
+using ::testing::Pointwise;
 using ImplementationType = ::testing::Types<float, double>;
 TYPED_TEST_SUITE(MemoryArenaTypedTests, ImplementationType);
 
@@ -95,8 +98,7 @@ TYPED_TEST(MemoryArenaTypedTests, SetEntryFailsWithInvalidEmbeddingSize) {
 
   if constexpr (std::is_same_v<TypeParam, float>) {
     arena_type = EmbeddingDataType::Float32_t;
-  }
-  else {
+  } else {
     arena_type = EmbeddingDataType::Float64_t;
   }
 
@@ -110,6 +112,68 @@ TYPED_TEST(MemoryArenaTypedTests, SetEntryFailsWithInvalidEmbeddingSize) {
   set_entry_result = (*arena)->SetEntry(0, bad_query_vec);
 
   ASSERT_FALSE(set_entry_result);
-  EXPECT_EQ(set_entry_result.error(),
-            AllocError::IncorrectEmbeddingDim);
+  EXPECT_EQ(set_entry_result.error(), AllocError::IncorrectEmbeddingDim);
+}
+
+TYPED_TEST(MemoryArenaTypedTests,
+           SetEntryFailsWhenRequestedIndexIsLargerThanCapacity) {
+  constexpr size_t capacity = 1;
+  constexpr size_t embedding_dim = 16;
+  EmbeddingDataType arena_type;
+
+  if constexpr (std::is_same_v<TypeParam, float>) {
+    arena_type = EmbeddingDataType::Float32_t;
+  } else {
+    arena_type = EmbeddingDataType::Float64_t;
+  }
+
+  folly::Expected<std::unique_ptr<MemoryArena>, StartupError> arena =
+      MemoryArena::MakeArena(capacity, embedding_dim, arena_type);
+  ASSERT_TRUE(arena);
+
+  const std::vector<TypeParam> vec0 = std::vector<TypeParam>(embedding_dim, 1);
+  const std::vector<TypeParam> vec1 = std::vector<TypeParam>(embedding_dim, 2);
+  ASSERT_TRUE((*arena)->SetEntry(0, vec0));
+
+  folly::Expected<folly::Unit, AllocError> set_entry_result;
+  set_entry_result = (*arena)->SetEntry(1, vec1);
+
+  ASSERT_FALSE(set_entry_result);
+  EXPECT_EQ(set_entry_result.error(), AllocError::RequestedIDAboveCapcity);
+}
+
+TYPED_TEST(MemoryArenaTypedTests, SetEntryCorrectlySetsEmbeddingEntry) {
+  constexpr size_t capacity = 2;
+  constexpr size_t embedding_dim = 16;
+  EmbeddingDataType arena_type;
+
+  if constexpr (std::is_same_v<TypeParam, float>) {
+    arena_type = EmbeddingDataType::Float32_t;
+  } else {
+    arena_type = EmbeddingDataType::Float64_t;
+  }
+
+  folly::Expected<std::unique_ptr<MemoryArena>, StartupError> arena =
+      MemoryArena::MakeArena(capacity, embedding_dim, arena_type);
+  ASSERT_TRUE(arena);
+
+  const std::vector<TypeParam> good_query_vec =
+      std::vector<TypeParam>(embedding_dim, 1);
+
+  ASSERT_TRUE((*arena)->SetEntry(0, good_query_vec));
+
+  const folly::fbvector<unsigned long>& active_arena_ids =
+      (*arena)->GetActiveIds();
+  ASSERT_EQ(active_arena_ids.size(), 1);
+  ASSERT_EQ(active_arena_ids[0], 0);
+
+  const MemoryArena& arena_view = *(*arena);
+
+  const TypeParam* arena_base_ptr = arena_view.GetArenaView<TypeParam>();
+  const TypeParam* arena_embedding_entry =
+      arena_base_ptr + active_arena_ids[0] * embedding_dim;
+
+  EXPECT_THAT(std::vector<TypeParam>(arena_embedding_entry,
+                                     arena_embedding_entry + embedding_dim),
+              Pointwise(FloatEq(), good_query_vec));
 }

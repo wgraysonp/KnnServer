@@ -73,7 +73,7 @@ folly::fbvector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
   const folly::fbvector<unsigned long>& active_ids = arena.GetActiveIds();
 
   const T* query_data = query_vector.data();
-  const T* arena_base = arena.GetArenaView<T>().data();
+  const T* arena_base = arena.GetArenaView<T>();
 
   size_t total_items = active_ids.size();
   size_t embedding_dim = arena.GetEmbeddingDim();

@@ -24,7 +24,7 @@ enum class RequestValidationError {
 
 enum class AllocError {
   BadAlloc,
-  NotFound,
+  RequestedIDAboveCapcity,
   TypeDisagreesWithEmbeddingType,
   IncorrectEmbeddingDim
 };
