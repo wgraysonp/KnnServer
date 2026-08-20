@@ -7,26 +7,26 @@
 #include <vector>
 
 #include "src/arena.h"
-#include "src/consts.h"
 #include "src/data/structs.h"
+#include "src/data/types.h"
+#include "src/service/service_utils.h"
 
 namespace recsys {
 
 enum class SearchError { InvalidQuery };
 
 folly::Expected<std::unique_ptr<MemoryArena>, StartupError>
-StartServiceAndCreateArena(size_t item_count, size_t embedding_dim,
-                           EmbeddingDataType type);
+StartServiceAndCreateArena(const size_t item_count, const size_t embedding_dim,
+                           const EmbeddingDataType type);
 
-// TODO: the return type here should be something else: a collection of the
-// closest vectors
-folly::Expected<std::vector<float>, SearchError>
-ProcessRequestAndReturnSearchResults();
+folly::Expected<QueryResponse, SearchError>
+ProcessRequestAndReturnSearchResults(const MemoryArena& arena,
+                                     const QueryRequest& request);
 
 // Temporary implementation assuming the request consists only of a single
 // float vector.
 // TODO: This should be updated to handle a full http or protobuf request
-folly::Expected<folly::Unit, SearchError> ValidateSearchRequest(
+folly::Expected<folly::Unit, RequestValidationError> ValidateSearchRequest(
     const QueryRequest& request);
 
 }  // namespace recsys

@@ -11,5 +11,5 @@ double ComputeSquaredEuclideanDistance(const T* a, const T* b, size_t dim);
 template <typename T>
 double NeonComputeSquaredEuclideanDistance(const T* a, const T* b, size_t dim);
 
-} //namespace recsys
-#endif //RECSYS_ENGINE_DISTANCE_H_
+}  // namespace recsys
+#endif  // RECSYS_ENGINE_DISTANCE_H_

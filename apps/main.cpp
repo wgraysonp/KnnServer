@@ -32,7 +32,7 @@ int main() {
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  std::vector<KnnResult<float>> result =
+  std::vector<EmbeddingSearchResult> result =
       FindNClosest<float>(*arena, query_vector, 10);
 
   auto end = std::chrono::high_resolution_clock::now();

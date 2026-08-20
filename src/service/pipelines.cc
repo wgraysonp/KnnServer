@@ -5,15 +5,16 @@
 #include <memory>
 
 #include "src/arena.h"
-#include "src/consts.h"
 #include "src/data/structs.h"
+#include "src/data/types.h"
 #include "src/macros.h"
+#include "src/service/service_utils.h"
 
 namespace recsys {
 
 folly::Expected<std::unique_ptr<MemoryArena>, StartupError>
-StartServiceAndCreateArena(size_t item_count, size_t embedding_dim,
-                           EmbeddingDataType type) {
+StartServiceAndCreateArena(const size_t item_count, const size_t embedding_dim,
+                           const EmbeddingDataType& type) {
   return MemoryArena::MakeArena(item_count, embedding_dim, type)
       .then([item_count, embedding_dim](std::unique_ptr<MemoryArena> arena)
                 -> folly::Expected<std::unique_ptr<MemoryArena>, StartupError> {
@@ -27,14 +28,24 @@ StartServiceAndCreateArena(size_t item_count, size_t embedding_dim,
       });
 }
 
-// TODO: the return type here should be something else: a collection of the
-// closest vectors
-// folly::Expected<std::vector<float>, SearchError>
-// ProcessRequestAndReturnSearchResults();
+folly::Expected<QueryResponse, SearchError>
+ProcessRequestAndReturnSearchResults(const MemoryArena& arena,
+                                     const QueryRequest& request) {
+  // 1. validate request
+  // 2. prepare response for search
+  // 3. do the search
+  // 4. package response and return it
 
-// folly::Expected<folly::Unit, SearchError> ValidateSearchRequest(
-//     const QueryRequest& request) {
-//       auto 
-//     }
+  // temp placeholder
+  return QueryResponse{ResponseStatus::StatusOk};
+}
 
+folly::Expected<folly::Unit, RequestValidationError> ValidateSearchRequest(
+    const QueryRequest& request) {
+  return ValidateRequestDataSize(request).then(
+      [&request](
+          folly::Unit) -> folly::Expected<folly::Unit, RequestValidationError> {
+        return ValidateRequestSearchLibrary(request);
+      });
+}
 }  // namespace recsys

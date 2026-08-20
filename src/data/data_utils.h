@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-#include "src/consts.h"
+#include "src/data/types.h"
 
 namespace recsys {
 

@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "src/arena.h"
-#include "src/consts.h"
 
 namespace recsys {
 
@@ -25,7 +24,7 @@ double ComputeSquaredEuclideanDistance<float>(const float* a, const float* b,
 
 template <>
 void ComputeAllDistancesInBatch<float>(
-    KnnResult<float>* batch_results,
+    EmbeddingSearchResult* batch_results,
     const std::vector<unsigned long>& active_ids, const float* arena_base,
     const float* query_vector, size_t embedding_dim, size_t start, size_t end) {
   int processed_count = 0;
@@ -61,49 +60,17 @@ void ComputeAllDistancesInBatch<float>(
       out3 = vfmaq_f32(out3, sub3, sub3);
     }
 
-    batch_results[processed_count] = KnnResult<float>{
-        search_0, active_ids[i], static_cast<double>(vaddvq_f32(out0))};
-    batch_results[processed_count + 1] = KnnResult<float>{
-        search_1, active_ids[i + 1], static_cast<double>(vaddvq_f32(out1))};
-    batch_results[processed_count + 2] = KnnResult<float>{
-        search_2, active_ids[i + 2], static_cast<double>(vaddvq_f32(out2))};
-    batch_results[processed_count + 3] = KnnResult<float>{
-        search_3, active_ids[i + 3], static_cast<double>(vaddvq_f32(out3))};
+    batch_results[processed_count] = EmbeddingSearchResult{
+        active_ids[i], static_cast<double>(vaddvq_f32(out0))};
+    batch_results[processed_count + 1] = EmbeddingSearchResult{
+        active_ids[i + 1], static_cast<double>(vaddvq_f32(out1))};
+    batch_results[processed_count + 2] = EmbeddingSearchResult{
+        active_ids[i + 2], static_cast<double>(vaddvq_f32(out2))};
+    batch_results[processed_count + 3] = EmbeddingSearchResult{
+        active_ids[i + 3], static_cast<double>(vaddvq_f32(out3))};
 
     processed_count += 4;
   }
-}
-
-template <>
-std::vector<KnnResult<float>> FindNClosestInChunk<float>(
-    const std::vector<unsigned long>& active_ids, const float* arena_base,
-    const float* query_vector, size_t n_closest, size_t embedding_dim,
-    size_t chunk_start, size_t chunk_end) {
-  KnnPriorityQueue<float> closest_n_queue;
-
-  KnnResult<float> batch_results[BATCH_SIZE];
-
-  for (size_t batch_start = chunk_start; batch_start < chunk_end;
-       batch_start += BATCH_SIZE) {
-    size_t batch_end = batch_start + BATCH_SIZE;
-
-    ComputeAllDistancesInBatch<float>(batch_results, active_ids, arena_base,
-                                      query_vector, embedding_dim, batch_start,
-                                      batch_end);
-
-    UpdateNClosestInChunkWithNewDistances(batch_results, closest_n_queue,
-                                          n_closest);
-
-    batch_start = batch_end;
-  }
-  std::vector<KnnResult<float>> chunk_results;
-
-  while (!closest_n_queue.empty()) {
-    KnnResult<float> res = closest_n_queue.top();
-    chunk_results.push_back(std::move(res));
-    closest_n_queue.pop();
-  }
-  return chunk_results;
 }
 
 }  // namespace recsys

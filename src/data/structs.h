@@ -1,31 +1,41 @@
-#ifndef RECSYS_ENGINE_EMBEDDING_LIBRARY_H_
-#define RECSYS_ENGINE_EMBEDDING_LIBRARY_H_
+#ifndef RECSYS_ENGINE_STRUCTS_H_
+#define RECSYS_ENGINE_STRUCTS_H_
 
 #include <cstddef>
 #include <cstdint>
 #include <vector>
 
-#include "src/consts.h"
+#include "src/data/types.h"
 
 namespace recsys {
 
+struct EmbeddingSearchResult {
+  unsigned long id;
+  double dist;
+};
+
 struct QueryRequest {
+  std::vector<uint8_t> query_vector;
+  EmbeddingDataType type;
   size_t library_id;
   size_t embedding_dim;
-  EmbeddingDataType type;
-  std::vector<uint8_t> query_vector;
+  size_t n_closest;
+  bool include_vectors = false;
 };
 
 struct QueryResponse {
-  bool success;
+  ResponseStatus status;
+  std::optional<uint64_t> micros_passed = std::nullopt;
+  std::optional<std::vector<EmbeddingSearchResult>> nearest_neighbors =
+      std::nullopt;
 };
 
 struct EmbeddingLibrary {
+  EmbeddingDataType type;
   size_t library_id;
   size_t embedding_dim;
-  EmbeddingDataType type;
 };
 
-} // namespace recsys
+}  // namespace recsys
 
-#endif // RECSYS_ENGINE_EMBEDDING_LIBRARY_H_
+#endif  // RECSYS_ENGINE_STRUCTS_H_

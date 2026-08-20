@@ -10,7 +10,8 @@
 #include <span>
 #include <stdexcept>
 
-#include "src/consts.h"
+#include "src/data/structs.h"
+#include "src/data/types.h"
 #include "src/macros.h"
 
 namespace recsys {
@@ -21,9 +22,9 @@ MemoryArena::MemoryArena(size_t capacity, size_t embedding_dim,
     throw std::invalid_argument("Embedding dimesion must be a multple of 16");
   }
 
-  size_t embedding_entry_size =GetTypeSize(type_);
+  size_t embedding_entry_size = GetTypeSize(type_);
   type_size_ = embedding_entry_size;
-  
+
   size_t total_bytes = capacity_ * embedding_dim_ * type_size_;
 
   arena_base_ptr_ = mmap(nullptr, total_bytes, PROT_READ | PROT_WRITE,
@@ -81,7 +82,7 @@ MemoryArena::MakeArena(size_t capacity, size_t embedding_dim,
   } catch (const std::runtime_error& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return folly::makeUnexpected(StartupError::MMAPFailure);
-  } catch (const std::invalid_argument& e){
+  } catch (const std::invalid_argument& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return folly::makeUnexpected(StartupError::ArenaInvalidArgument);
   } catch (...) {
@@ -90,8 +91,7 @@ MemoryArena::MakeArena(size_t capacity, size_t embedding_dim,
   }
 }
 
-size_t MemoryArena::GetTypeSize(
-    EmbeddingDataType type) {
+size_t MemoryArena::GetTypeSize(EmbeddingDataType type) {
   switch (type) {
     case EmbeddingDataType::Float32_t:
       return 4;

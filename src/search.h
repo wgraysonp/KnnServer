@@ -3,43 +3,37 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <vector>
 
 #include "src/arena.h"
+#include "src/data/structs.h"
+#include "src/data/types.h"
 #include "src/distance.h"
 #include "src/threads/threadpool.h"
 
 namespace recsys {
 
-template <typename T>
-struct KnnResult {
-  const T* embedding;
-  unsigned long id;
-  double dist;
-};
-
-template <typename T>
 struct CompareResult {
-  bool operator()(const KnnResult<T>& a, const KnnResult<T>& b) {
+  bool operator()(const EmbeddingSearchResult& a,
+                  const EmbeddingSearchResult& b) {
     return a.dist < b.dist;
   }
 };
 
-template <typename T>
 using KnnPriorityQueue =
-    std::priority_queue<KnnResult<T>, std::vector<KnnResult<T>>,
-                        CompareResult<T>>;
+    std::priority_queue<EmbeddingSearchResult,
+                        std::vector<EmbeddingSearchResult>, CompareResult>;
 
 template <typename T>
-void ComputeAllDistancesInBatch(KnnResult<T>* batch_results,
+void ComputeAllDistancesInBatch(EmbeddingSearchResult* batch_results,
                                 const std::vector<unsigned long>& active_ids,
                                 const T* arena_base, const T* query_vector,
                                 size_t embedding_dim, size_t start, size_t end);
 
-template <typename T>
-void UpdateNClosestInChunkWithNewDistances(KnnResult<T>* batch_results,
-                                           KnnPriorityQueue<T>& mutable_queue,
+void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
+                                           KnnPriorityQueue& mutable_queue,
                                            size_t n_closest) {
   for (size_t res_idx = 0; res_idx < BATCH_SIZE; ++res_idx) {
     if (mutable_queue.size() < n_closest) {
@@ -54,13 +48,36 @@ void UpdateNClosestInChunkWithNewDistances(KnnResult<T>* batch_results,
 }
 
 template <typename T>
-std::vector<KnnResult<T>> FindNClosestInChunk(
+std::vector<EmbeddingSearchResult> FindNClosestInChunk(
     const std::vector<unsigned long>& active_ids, const T* arena_base,
     const T* query_vector, size_t n_closest, size_t embedding_dim,
-    size_t chunk_start, size_t chunk_end);
+    size_t chunk_start, size_t chunk_end) {
+  KnnPriorityQueue closest_n_queue;
+  EmbeddingSearchResult batch_results[BATCH_SIZE];
+  size_t batch_end;
+  size_t batch_start;
+
+  for (batch_start = chunk_start; batch_start < chunk_end;
+       batch_start += BATCH_SIZE) {
+    batch_end = batch_start + BATCH_SIZE;
+    ComputeAllDistancesInBatch<T>(batch_results, active_ids, arena_base,
+                                  query_vector, embedding_dim, batch_start,
+                                  batch_end);
+    UpdateNClosestInChunkWithNewDistances(batch_results, closest_n_queue,
+                                          n_closest);
+  }
+  std::vector<EmbeddingSearchResult> chunk_results;
+
+  while (!closest_n_queue.empty()) {
+    EmbeddingSearchResult res = closest_n_queue.top();
+    chunk_results.push_back(std::move(res));
+    closest_n_queue.pop();
+  }
+  return chunk_results;
+}
 
 template <typename T>
-std::vector<KnnResult<T>> ComputeInitialCanidiateEmbeddings(
+std::vector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
     const MemoryArena& arena, const std::vector<T>& query_vector,
     size_t n_closest) {
   const std::vector<unsigned long>& active_ids = arena.GetActiveIds();
@@ -77,7 +94,7 @@ std::vector<KnnResult<T>> ComputeInitialCanidiateEmbeddings(
   size_t embeddings_per_worker = total_items / n_workers;
   size_t remainder = total_items % n_workers;
   size_t start = 0;
-  std::vector<std::future<std::vector<KnnResult<T>>>> search_results;
+  std::vector<std::future<std::vector<EmbeddingSearchResult>>> search_results;
 
   for (size_t i = 0; i < n_workers; ++i) {
     size_t chunk_size = embeddings_per_worker + (i < remainder ? 1 : 0);
@@ -91,7 +108,7 @@ std::vector<KnnResult<T>> ComputeInitialCanidiateEmbeddings(
     start = end;
   }
 
-  std::vector<KnnResult<T>> return_vec;
+  std::vector<EmbeddingSearchResult> return_vec;
 
   for (auto& fut : search_results) {
     auto res = fut.get();
@@ -102,17 +119,17 @@ std::vector<KnnResult<T>> ComputeInitialCanidiateEmbeddings(
 }
 
 template <typename T>
-std::vector<KnnResult<T>> FindNClosest(const MemoryArena& arena,
-                                       const std::vector<T>& query_vector,
-                                       size_t n_closest) {
-  std::vector<KnnResult<T>> candidates =
+std::vector<EmbeddingSearchResult> FindNClosest(
+    const MemoryArena& arena, const std::vector<T>& query_vector,
+    size_t n_closest) {
+  std::vector<EmbeddingSearchResult> candidates =
       ComputeInitialCanidiateEmbeddings(arena, query_vector, n_closest);
 
-  std::nth_element(candidates.begin(), candidates.begin() + n_closest,
-                   candidates.end(),
-                   [](const KnnResult<T>& a, const KnnResult<T>& b) {
-                     return a.dist < b.dist;
-                   });
+  std::nth_element(
+      candidates.begin(), candidates.begin() + n_closest, candidates.end(),
+      [](const EmbeddingSearchResult& a, const EmbeddingSearchResult& b) {
+        return a.dist < b.dist;
+      });
   candidates.resize(n_closest);
   return candidates;
 }

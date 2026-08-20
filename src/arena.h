@@ -10,23 +10,10 @@
 #include <span>
 #include <vector>
 
-#include "src/consts.h"
+#include "src/data/structs.h"
+#include "src/data/types.h"
 
 namespace recsys {
-
-enum class AllocError {
-  BadAlloc,
-  NotFound,
-  TypeDisagreesWithEmbeddingType,
-  IncorrectEmbeddingDim
-};
-
-enum class StartupError {
-  ArenaInvalidArgument,
-  MMAPFailure,
-  DataLoadError,
-  Unknown
-};
 
 class MemoryArena {
  public:
@@ -56,8 +43,7 @@ class MemoryArena {
 
  private:
   MemoryArena(size_t capacity, size_t embedding_dim, EmbeddingDataType type);
-  static size_t GetTypeSize(
-      EmbeddingDataType type);
+  static size_t GetTypeSize(EmbeddingDataType type);
 
   template <typename T>
   folly::Expected<folly::Unit, AllocError> ValidateAddedEmbedding(
