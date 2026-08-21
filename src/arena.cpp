@@ -13,6 +13,7 @@
 
 #include "src/data/structs.h"
 #include "src/data/types.h"
+#include "src/data/data_utils.h"
 #include "src/macros.h"
 
 namespace recsys {
@@ -89,15 +90,6 @@ MemoryArena::MakeArena(size_t capacity, size_t embedding_dim,
   } catch (...) {
     std::cerr << "Unknown startup error.." << std::endl;
     return folly::makeUnexpected(StartupError::Unknown);
-  }
-}
-
-size_t MemoryArena::GetTypeSize(EmbeddingDataType type) {
-  switch (type) {
-    case EmbeddingDataType::Float32_t:
-      return 4;
-    case EmbeddingDataType::Float64_t:
-      return 8;
   }
 }
 }  // namespace recsys

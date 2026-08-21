@@ -153,21 +153,27 @@ TYPED_TEST(MemoryArenaTypedTests, SetEntryCorrectlySetsEmbeddingEntry) {
     arena_type = EmbeddingDataType::Float64_t;
   }
 
-  folly::Expected<std::unique_ptr<MemoryArena>, StartupError> arena =
+  folly::Expected<std::unique_ptr<MemoryArena>, StartupError> arena_status =
       MemoryArena::MakeArena(capacity, embedding_dim, arena_type);
-  ASSERT_TRUE(arena);
+  ASSERT_TRUE(arena_status);
+
+  const std::unique_ptr<MemoryArena>& arena = arena_status.value();
 
   const std::vector<TypeParam> good_query_vec =
       std::vector<TypeParam>(embedding_dim, 1);
 
-  ASSERT_TRUE((*arena)->SetEntry(0, good_query_vec));
+  ASSERT_TRUE(arena->SetEntry(0, good_query_vec));
 
   const folly::fbvector<unsigned long>& active_arena_ids =
-      (*arena)->GetActiveIds();
+      arena->GetActiveIds();
   ASSERT_EQ(active_arena_ids.size(), 1);
   ASSERT_EQ(active_arena_ids[0], 0);
 
-  const MemoryArena& arena_view = *(*arena);
+  const folly::fbvector<bool>& id_status_map = arena->GetIdStatusMap();
+  ASSERT_EQ(id_status_map.size(), capacity);
+  ASSERT_TRUE(id_status_map[0]);
+
+  const MemoryArena& arena_view = *arena;
 
   const TypeParam* arena_base_ptr = arena_view.GetArenaView<TypeParam>();
   const TypeParam* arena_embedding_entry =

@@ -32,7 +32,7 @@ for test_exe in build_debug/tests/*; do
         echo "----------------------------------------"
         
         # Run the test executable
-        ./"$test_exe"
+         ./"$test_exe"
         
         echo "----------------------------------------"
     fi

@@ -12,12 +12,12 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
+include(GoogleTest)
+
 add_executable(run_threadpool_tests threadpool_test.cpp)
 target_include_directories(run_threadpool_tests PRIVATE ${CMAKE_SOURCE_DIR})
-
 target_link_libraries(run_threadpool_tests PRIVATE GTest::gtest_main)
 target_link_libraries(run_threadpool_tests PRIVATE threads)
-include(GoogleTest)
 gtest_discover_tests(run_threadpool_tests DISCOVERY_MODE PRE_TEST)
 
 add_executable(run_arena_tests arena_test.cpp)
