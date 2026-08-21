@@ -1,6 +1,7 @@
 #include "src/arena.h"
 
 #include <folly/Expected.h>
+#include <folly/FBVector.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
