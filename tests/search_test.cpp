@@ -318,11 +318,10 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreads) {
   // map to store closest embeddings by the value of first coordinate
   // the rest of the cooridinates will be set to zero
   std::unordered_map<int, std::optional<EmbeddingSearchResult>>
-      closest_indices =
-  { {1, std::nullopt},
-    {2, std::nullopt},
-    {3, std::nullopt},
-    {4, std::nullopt} };
+      closest_indices = {{1, std::nullopt},
+                         {2, std::nullopt},
+                         {3, std::nullopt},
+                         {4, std::nullopt}};
 
   for (size_t idx = 0; idx < unique_vals.size(); ++idx) {
     int val = unique_vals.at(idx);
@@ -335,8 +334,8 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreads) {
     auto it = closest_indices.find(val);
     if (it != closest_indices.end()) {
       // store dist as val^2 since the search returns squared distance
-      it->second =
-          EmbeddingSearchResult{.id = idx, .dist = static_cast<TypeParam>(val*val)};
+      it->second = EmbeddingSearchResult{
+          .id = idx, .dist = static_cast<TypeParam>(val * val)};
     }
   }
 
@@ -379,7 +378,9 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreads) {
   EXPECT_THAT(res[3].dist, IsNearlyEqual(expected_4.dist));
 }
 
-TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreadsAndTieForFirst) {
+TYPED_TEST(
+    SearchTests,
+    FindNClosestSuceedsWithLargeLibraryAndMultipleThreadsAndTieForFirst) {
   using Base = SearchTests<TypeParam>;
 
   size_t total_embeddings = 1000;
@@ -407,8 +408,7 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreadsAnd
     std::vector<TypeParam> v(Base::embedding_dim);
 
     if (closest_vals.contains(val)) {
-
-      // if val is 1, 2, 3, or 4. Set the embedding equal to the query vector 
+      // if val is 1, 2, 3, or 4. Set the embedding equal to the query vector
       // (the zero vector)
       ASSERT_TRUE(Base::arena->SetEntry(idx, v));
 
@@ -416,10 +416,10 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreadsAnd
       // ensure they are in proper order sorted by the fall back id
       closest_embeddings.push_back({.id = idx, .dist = 0});
     } else {
-
-    // otherwise, se the first coordinate equal to unique val and the rest zero
-    v.at(0) = static_cast<TypeParam>(val);
-    ASSERT_TRUE(Base::arena->SetEntry(idx, v));
+      // otherwise, se the first coordinate equal to unique val and the rest
+      // zero
+      v.at(0) = static_cast<TypeParam>(val);
+      ASSERT_TRUE(Base::arena->SetEntry(idx, v));
     }
   }
 

@@ -17,11 +17,11 @@ namespace recsys {
 
 folly::fbvector<EmbeddingSearchResult> FindNClosest(
     const MemoryArena& arena, const folly::fbvector<float>& query_vector,
-    size_t n_closest, size_t n_workers = 4);
+    const size_t n_closest, const size_t n_workers = 4);
 
 folly::fbvector<EmbeddingSearchResult> FindNClosest(
     const MemoryArena& arena, const folly::fbvector<double>& query_vector,
-    size_t n_closest, size_t n_workers = 4);
+    const size_t n_closest, const size_t n_workers = 4);
 
 }  // namespace recsys
 #endif  // RECSYS_ENGINE_SEARCH_H_

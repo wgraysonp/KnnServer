@@ -28,7 +28,7 @@ StartServiceAndCreateArena(const size_t item_count, const size_t embedding_dim,
       });
 }
 
-folly::Expected<QueryResponse, SearchError>
+folly::Expected<QueryResponse, SearchRequestError>
 ProcessRequestAndReturnSearchResults(const MemoryArena& arena,
                                      const QueryRequest& request) {
   // 1. validate request
@@ -38,19 +38,10 @@ ProcessRequestAndReturnSearchResults(const MemoryArena& arena,
 
   // temp placeholder to keep Werror Wunused-parameter from complaining
   if (arena.GetEmbeddingDim() != request.embedding_dim) {
-    return folly::makeUnexpected(SearchError::InvalidQuery);
+    return folly::makeUnexpected(SearchRequestError::InvalidRawDataSizeError);
   }
 
   // temp placeholder
   return QueryResponse{ResponseStatus::StatusOk};
-}
-
-folly::Expected<folly::Unit, RequestValidationError> ValidateSearchRequest(
-    const QueryRequest& request) {
-  return ValidateRequestDataSize(request).then(
-      [&request](
-          folly::Unit) -> folly::Expected<folly::Unit, RequestValidationError> {
-        return ValidateRequestSearchLibrary(request);
-      });
 }
 }  // namespace recsys

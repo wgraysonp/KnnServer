@@ -16,10 +16,9 @@ enum class EmbeddingDataType {
   Float32_t,
 };
 
-enum class RequestValidationError {
-  RawDataSizeError,
-  SearchLibraryNotFoundError,
-  UnupportedDatatypeError
+enum class SearchRequestError {
+  InvalidRawDataSizeError,
+  InvalidSearchLibraryError,
 };
 
 enum class AllocError {

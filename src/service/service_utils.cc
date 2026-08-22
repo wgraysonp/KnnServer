@@ -12,18 +12,18 @@
 
 namespace recsys {
 
-folly::Expected<folly::Unit, RequestValidationError> ValidateRequestDataSize(
+folly::Expected<folly::Unit, SearchRequestError> ValidateRequestDataSize(
     const QueryRequest& request) {
   size_t expected_bytes = GetTypeSize(request.type) * request.embedding_dim;
 
   if (expected_bytes != request.query_vector.size()) {
-    return folly::makeUnexpected(RequestValidationError::RawDataSizeError);
+    return folly::makeUnexpected(SearchRequestError::InvalidRawDataSizeError);
   }
 
   return folly::unit;
 }
 
-folly::Expected<folly::Unit, RequestValidationError>
+folly::Expected<folly::Unit, SearchRequestError>
 ValidateRequestSearchLibrary(const QueryRequest& request) {
   // TODO: check that request.library exists. This will require storing
   // available libraries in some way and checking if the library exists. I will
@@ -32,10 +32,19 @@ ValidateRequestSearchLibrary(const QueryRequest& request) {
   // temp placeholder to use request and keep Werror from complaning
   if (request.library_id == 0) {
     return folly::makeUnexpected(
-        RequestValidationError::SearchLibraryNotFoundError);
+        SearchRequestError::InvalidSearchLibraryError);
   }
 
   return folly::unit;
+}
+
+folly::Expected<folly::Unit, SearchRequestError> ValidateSearchRequest(
+    const QueryRequest& request) {
+  return ValidateRequestDataSize(request).then(
+      [&request](
+          folly::Unit) -> folly::Expected<folly::Unit, SearchRequestError> {
+        return ValidateRequestSearchLibrary(request);
+      });
 }
 
 }  // namespace recsys
