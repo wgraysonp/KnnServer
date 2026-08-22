@@ -388,8 +388,8 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreadsAnd
 
   // unique values to enumerate the embeddings.
   // these will be separate from the indices in memory arena
-  // this is so that we may construct them in such a way that their distance
-  // in the expected sorted order agrees with the unique val, but we may
+  // this is so that we may construct them in such a way that their
+  // expected sorted order agrees with the unique val, but we may
   // randomize their store location in the arena.
   std::vector<int> unique_vals(total_embeddings);
   std::iota(unique_vals.begin(), unique_vals.end(), 1);
