@@ -75,7 +75,8 @@ void ComputeAllDistancesInBatch(
 void ComputeAllDistancesInBatch(
     EmbeddingSearchResult* batch_results,
     const folly::fbvector<unsigned long>& active_ids, const double* arena_base,
-    const double* query_vector, size_t embedding_dim, size_t start, size_t end) {
+    const double* query_vector, size_t embedding_dim, size_t start,
+    size_t end) {
   int processed_count = 0;
   size_t remainder = (end - start) % 4;
   unsigned long i;
@@ -136,11 +137,12 @@ void ComputeAllDistancesInBatch(
 
 void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
                                            KnnPriorityQueue& mutable_queue,
+                                           size_t batch_length,
                                            size_t n_closest) {
   double worst_distance = std::numeric_limits<double>::min();
   size_t n_processed = 0;
 
-  for (size_t res_idx = 0; res_idx < BATCH_SIZE; ++res_idx) {
+  for (size_t res_idx = 0; res_idx < batch_length; ++res_idx) {
     if (n_processed < n_closest) {
       mutable_queue.push(batch_results[res_idx]);
       n_processed++;

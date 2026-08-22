@@ -50,6 +50,7 @@ void ComputeAllDistancesInBatch(
 
 void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
                                            KnnPriorityQueue& mutable_queue,
+                                           size_t batch_length,
                                            size_t n_closest);
 
 template <typename T>
@@ -61,16 +62,18 @@ folly::fbvector<EmbeddingSearchResult> FindNClosestInChunk(
   EmbeddingSearchResult batch_results[BATCH_SIZE];
   size_t batch_end;
   size_t batch_start;
+  size_t batch_length;
 
   for (batch_start = chunk_start; batch_start < chunk_end;
        batch_start += BATCH_SIZE) {
     batch_end = std::min(batch_start + BATCH_SIZE, active_ids.size());
+    batch_length = batch_end - batch_start;
 
     ComputeAllDistancesInBatch(batch_results, active_ids, arena_base,
-                                  query_vector, embedding_dim, batch_start,
-                                  batch_end);
+                               query_vector, embedding_dim, batch_start,
+                               batch_end);
     UpdateNClosestInChunkWithNewDistances(batch_results, closest_n_queue,
-                                          n_closest);
+                                          batch_length, n_closest);
   }
   folly::fbvector<EmbeddingSearchResult> chunk_results;
 
@@ -128,16 +131,21 @@ template <typename T>
 folly::fbvector<EmbeddingSearchResult> FindNClosest(
     const MemoryArena& arena, const folly::fbvector<T>& query_vector,
     size_t n_closest, size_t n_workers = 4) {
+  size_t effective_n_closest =
+      std::min(n_closest, arena.GetTotalActiveEmbeddings());
+
   folly::fbvector<EmbeddingSearchResult> candidates =
-      ComputeInitialCanidiateEmbeddings(arena, query_vector, n_closest,
-                                        n_workers);
+      ComputeInitialCanidiateEmbeddings(arena, query_vector,
+                                        effective_n_closest, n_workers);
 
   std::nth_element(
-      candidates.begin(), candidates.begin() + n_closest, candidates.end(),
+      candidates.begin(), candidates.begin() + effective_n_closest,
+      candidates.end(),
       [](const EmbeddingSearchResult& a, const EmbeddingSearchResult& b) {
         return a.dist < b.dist;
       });
-  candidates.resize(n_closest);
+  candidates.resize(effective_n_closest);
+  std::reverse(candidates.begin(), candidates.end());
   return candidates;
 }
 }  // namespace recsys

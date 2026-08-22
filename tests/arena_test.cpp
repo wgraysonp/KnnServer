@@ -168,11 +168,12 @@ TYPED_TEST(MemoryArenaTypedTests, SetEntryCorrectlySetsEmbeddingEntry) {
   const folly::fbvector<unsigned long>& active_arena_ids =
       arena->GetActiveIds();
   ASSERT_EQ(active_arena_ids.size(), 1);
-  ASSERT_EQ(active_arena_ids[0], 0);
+  EXPECT_EQ(active_arena_ids[0], 0);
 
   const folly::fbvector<bool>& id_status_map = arena->GetIdStatusMap();
   ASSERT_EQ(id_status_map.size(), capacity);
-  ASSERT_TRUE(id_status_map[0]);
+  EXPECT_TRUE(id_status_map[0]);
+  EXPECT_FALSE(id_status_map[1]);
 
   const MemoryArena& arena_view = *arena;
 
@@ -183,4 +184,61 @@ TYPED_TEST(MemoryArenaTypedTests, SetEntryCorrectlySetsEmbeddingEntry) {
   EXPECT_THAT(std::vector<TypeParam>(arena_embedding_entry,
                                      arena_embedding_entry + embedding_dim),
               Pointwise(FloatEq(), good_query_vec));
+}
+
+TYPED_TEST(MemoryArenaTypedTests, SetEntryCorrectlySetsMultipleEmbeddingEntry) {
+  constexpr size_t capacity = 3;
+  constexpr size_t embedding_dim = 16;
+  EmbeddingDataType arena_type;
+
+  if constexpr (std::is_same_v<TypeParam, float>) {
+    arena_type = EmbeddingDataType::Float32_t;
+  } else {
+    arena_type = EmbeddingDataType::Float64_t;
+  }
+
+  folly::Expected<std::unique_ptr<MemoryArena>, StartupError> arena_status =
+      MemoryArena::MakeArena(capacity, embedding_dim, arena_type);
+  ASSERT_TRUE(arena_status);
+
+  const std::unique_ptr<MemoryArena>& arena = arena_status.value();
+
+  const std::vector<TypeParam> good_query_vec_1 =
+      std::vector<TypeParam>(embedding_dim, 1);
+
+  std::vector<TypeParam> good_query_vec_2(embedding_dim);
+  good_query_vec_2.at(0) = 1;
+
+  ASSERT_TRUE(arena->SetEntry(0, good_query_vec_1));
+  ASSERT_TRUE(arena->SetEntry(1, good_query_vec_2));
+
+  const folly::fbvector<unsigned long>& active_arena_ids =
+      arena->GetActiveIds();
+  ASSERT_EQ(active_arena_ids.size(), 2);
+  EXPECT_EQ(active_arena_ids[0], 0);
+  EXPECT_EQ(active_arena_ids[1], 1);
+
+  const folly::fbvector<bool>& id_status_map = arena->GetIdStatusMap();
+  ASSERT_EQ(id_status_map.size(), capacity);
+
+  EXPECT_TRUE(id_status_map[0]);
+  EXPECT_TRUE(id_status_map[1]);
+  EXPECT_FALSE(id_status_map[2]);
+
+  const MemoryArena& arena_view = *arena;
+
+  const TypeParam* arena_base_ptr = arena_view.GetArenaView<TypeParam>();
+  const TypeParam* arena_embedding_entry_1 =
+      arena_base_ptr + active_arena_ids[0] * embedding_dim;
+
+  const TypeParam* arena_embedding_entry_2 =
+      arena_base_ptr + active_arena_ids[1] * embedding_dim;
+
+  EXPECT_THAT(std::vector<TypeParam>(arena_embedding_entry_1,
+                                     arena_embedding_entry_1 + embedding_dim),
+              Pointwise(FloatEq(), good_query_vec_1));
+
+  EXPECT_THAT(std::vector<TypeParam>(arena_embedding_entry_2,
+                                     arena_embedding_entry_2 + embedding_dim),
+              Pointwise(FloatEq(), good_query_vec_2));
 }

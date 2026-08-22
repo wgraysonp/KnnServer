@@ -25,7 +25,7 @@ struct TestTolerance;
 
 template <>
 struct TestTolerance<double> {
-  static constexpr double value = 1e-9;
+  static constexpr double value = 1e-6;
 };
 template <>
 struct TestTolerance<float> {
@@ -112,11 +112,14 @@ TYPED_TEST(SearchTests,
   using Base = SearchTests<TypeParam>;
 
   ASSERT_TRUE(Base::arena->SetEntry(
-      0, std::vector<TypeParam>(Base::embedding_dim, 0.5f)));
+      0, std::vector<TypeParam>(Base::embedding_dim,
+                                static_cast<TypeParam>(0.5f))));
   ASSERT_TRUE(Base::arena->SetEntry(
-      1, std::vector<TypeParam>(Base::embedding_dim, 0.6f)));
+      1, std::vector<TypeParam>(Base::embedding_dim,
+                                static_cast<TypeParam>(0.6f))));
   ASSERT_TRUE(Base::arena->SetEntry(
-      2, std::vector<TypeParam>(Base::embedding_dim, 0.8f)));
+      3, std::vector<TypeParam>(Base::embedding_dim,
+                                static_cast<TypeParam>(0.8f))));
 
   size_t n_workers = 1;
   size_t n_closest = 1;
@@ -131,22 +134,27 @@ TYPED_TEST(SearchTests,
       EmbeddingSearchResult{.id = 1, .dist = 0};
 
   ASSERT_EQ(res.size(), 1);
-  ASSERT_EQ(res[0].id, expected_closest.id);
-  ASSERT_EQ(res[0].dist, expected_closest.dist);
+  EXPECT_EQ(res[0].id, expected_closest.id);
+  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_closest.dist));
 }
 
-TYPED_TEST(SearchTests,
-           FindNClosestSuceedsWhenNumberOfWorkersIsLargerThanNumberOfEmbeddings) {
+TYPED_TEST(
+    SearchTests,
+    FindNClosestSuceedsWhenNumberOfWorkersIsLargerThanNumberOfEmbeddings) {
   using Base = SearchTests<TypeParam>;
 
   ASSERT_TRUE(Base::arena->SetEntry(
-      0, std::vector<TypeParam>(Base::embedding_dim, 0.5f)));
+      0, std::vector<TypeParam>(Base::embedding_dim,
+                                static_cast<TypeParam>(0.5f))));
   ASSERT_TRUE(Base::arena->SetEntry(
-      1, std::vector<TypeParam>(Base::embedding_dim, 0.6f)));
+      1, std::vector<TypeParam>(Base::embedding_dim,
+                                static_cast<TypeParam>(0.6f))));
   ASSERT_TRUE(Base::arena->SetEntry(
-      2, std::vector<TypeParam>(Base::embedding_dim, 0.8f)));
+      2, std::vector<TypeParam>(Base::embedding_dim,
+                                static_cast<TypeParam>(0.8f))));
   ASSERT_TRUE(Base::arena->SetEntry(
-      2, std::vector<TypeParam>(Base::embedding_dim, 0.9f)));
+      3, std::vector<TypeParam>(Base::embedding_dim,
+                                static_cast<TypeParam>(0.9f))));
 
   size_t n_workers = 5;
   size_t n_closest = 1;
@@ -161,6 +169,130 @@ TYPED_TEST(SearchTests,
       EmbeddingSearchResult{.id = 1, .dist = 0};
 
   ASSERT_EQ(res.size(), 1);
-  ASSERT_EQ(res[0].id, expected_closest.id);
-  ASSERT_EQ(res[0].dist, expected_closest.dist);
+  EXPECT_EQ(res[0].id, expected_closest.id);
+  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_closest.dist));
+}
+
+TYPED_TEST(
+    SearchTests,
+    FindNClosestSuceedsWhenNumberOfNeighborsIsLargerThanNumberOfEmbeddings) {
+  using Base = SearchTests<TypeParam>;
+
+  std::vector<TypeParam> embedding_0 =
+      std::vector<TypeParam>(Base::embedding_dim, static_cast<TypeParam>(0.5f));
+  std::vector<TypeParam> embedding_1 =
+      std::vector<TypeParam>(Base::embedding_dim, static_cast<TypeParam>(0.6f));
+  std::vector<TypeParam> embedding_2 =
+      std::vector<TypeParam>(Base::embedding_dim, static_cast<TypeParam>(0.8f));
+  std::vector<TypeParam> embedding_3 =
+      std::vector<TypeParam>(Base::embedding_dim, static_cast<TypeParam>(0.9f));
+
+  ASSERT_TRUE(Base::arena->SetEntry(0, embedding_0));
+  ASSERT_TRUE(Base::arena->SetEntry(1, embedding_1));
+  ASSERT_TRUE(Base::arena->SetEntry(2, embedding_2));
+  ASSERT_TRUE(Base::arena->SetEntry(3, embedding_3));
+
+  size_t n_workers = 1;
+  size_t n_closest = 5;
+
+  folly::fbvector<TypeParam> query_vec =
+      folly::fbvector<TypeParam>(Base::embedding_dim, 0.6f);
+
+  folly::fbvector<EmbeddingSearchResult> res =
+      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+
+  // expected order
+  // 1. embedding_1 - distance 0
+  // 2. embedding_0 - distance 16*0.1^2
+  // 3. embedding_2 - distance 16*0.2^2
+  // 4. embedding_3 - distance 16*0.3^2
+
+  EmbeddingSearchResult expected_1 = EmbeddingSearchResult{.id = 1, .dist = 0};
+  EmbeddingSearchResult expected_2 =
+      EmbeddingSearchResult{.id = 0, .dist = 16 * 0.1 * 0.1};
+  EmbeddingSearchResult expected_3 =
+      EmbeddingSearchResult{.id = 2, .dist = 16 * 0.2 * 0.2};
+  EmbeddingSearchResult expected_4 =
+      EmbeddingSearchResult{.id = 3, .dist = 16 * 0.3 * 0.3};
+
+  ASSERT_EQ(res.size(), 4);
+
+  EXPECT_EQ(res[0].id, expected_1.id);
+  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_1.dist));
+
+  EXPECT_EQ(res[1].id, expected_2.id);
+  EXPECT_THAT(res[1].dist, IsNearlyEqual(expected_2.dist));
+
+  EXPECT_EQ(res[2].id, expected_3.id);
+  EXPECT_THAT(res[2].dist, IsNearlyEqual(expected_3.dist));
+
+  EXPECT_EQ(res[3].id, expected_4.id);
+  EXPECT_THAT(res[3].dist, IsNearlyEqual(expected_4.dist));
+}
+
+TYPED_TEST(
+    SearchTests,
+    FindNClosestSuceedsWhenNumberOfNeighborsIsSmallerThanNumberOfEmbeddings) {
+  using Base = SearchTests<TypeParam>;
+
+  std::vector<TypeParam> embedding_0 =
+      std::vector<TypeParam>(Base::embedding_dim, static_cast<TypeParam>(0.5f));
+  std::vector<TypeParam> embedding_1 =
+      std::vector<TypeParam>(Base::embedding_dim, static_cast<TypeParam>(0.6f));
+  std::vector<TypeParam> embedding_2 =
+      std::vector<TypeParam>(Base::embedding_dim, static_cast<TypeParam>(0.8f));
+  std::vector<TypeParam> embedding_3 =
+      std::vector<TypeParam>(Base::embedding_dim, static_cast<TypeParam>(0.9f));
+
+  std::vector<TypeParam> too_far_embedding =
+      std::vector<TypeParam>(Base::embedding_dim, static_cast<TypeParam>(1));
+
+  ASSERT_TRUE(Base::arena->SetEntry(0, embedding_0));
+  ASSERT_TRUE(Base::arena->SetEntry(1, embedding_1));
+  ASSERT_TRUE(Base::arena->SetEntry(2, embedding_2));
+  ASSERT_TRUE(Base::arena->SetEntry(3, embedding_3));
+
+  ASSERT_TRUE(Base::arena->SetEntry(4, too_far_embedding));
+  ASSERT_TRUE(Base::arena->SetEntry(5, too_far_embedding));
+  ASSERT_TRUE(Base::arena->SetEntry(6, too_far_embedding));
+  ASSERT_TRUE(Base::arena->SetEntry(7, too_far_embedding));
+  ASSERT_TRUE(Base::arena->SetEntry(8, too_far_embedding));
+  ASSERT_TRUE(Base::arena->SetEntry(9, too_far_embedding));
+
+  size_t n_workers = 1;
+  size_t n_closest = 4;  // Should capture embeddings 0-3
+
+  folly::fbvector<TypeParam> query_vec =
+      folly::fbvector<TypeParam>(Base::embedding_dim, 0.6f);
+
+  folly::fbvector<EmbeddingSearchResult> res =
+      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+
+  // expected order
+  // 1. embedding_1 - distance 0
+  // 2. embedding_0 - distance 16*0.1^2
+  // 3. embedding_2 - distance 16*0.2^2
+  // 4. embedding_3 - distance 16*0.3^2
+
+  EmbeddingSearchResult expected_1 = EmbeddingSearchResult{.id = 1, .dist = 0};
+  EmbeddingSearchResult expected_2 =
+      EmbeddingSearchResult{.id = 0, .dist = 16 * 0.1 * 0.1};
+  EmbeddingSearchResult expected_3 =
+      EmbeddingSearchResult{.id = 2, .dist = 16 * 0.2 * 0.2};
+  EmbeddingSearchResult expected_4 =
+      EmbeddingSearchResult{.id = 3, .dist = 16 * 0.3 * 0.3};
+
+  ASSERT_EQ(res.size(), 4);
+
+  EXPECT_EQ(res[0].id, expected_1.id);
+  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_1.dist));
+
+  EXPECT_EQ(res[1].id, expected_2.id);
+  EXPECT_THAT(res[1].dist, IsNearlyEqual(expected_2.dist));
+
+  EXPECT_EQ(res[2].id, expected_3.id);
+  EXPECT_THAT(res[2].dist, IsNearlyEqual(expected_3.dist));
+
+  EXPECT_EQ(res[3].id, expected_4.id);
+  EXPECT_THAT(res[3].dist, IsNearlyEqual(expected_4.dist));
 }

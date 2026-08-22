@@ -25,6 +25,7 @@ class MemoryArena {
 
   size_t GetCapacity() const { return capacity_; }
   size_t GetEmbeddingDim() const { return embedding_dim_; }
+  size_t GetTotalActiveEmbeddings() const { return active_ids_.size(); }
   const folly::fbvector<unsigned long>& GetActiveIds() const {
     return active_ids_;
   }
