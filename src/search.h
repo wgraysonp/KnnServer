@@ -3,16 +3,10 @@
 
 #include <folly/FBVector.h>
 
-#include <algorithm>
-#include <memory>
-#include <optional>
-#include <queue>
+#include <cstddef>
 
 #include "src/arena.h"
 #include "src/data/structs.h"
-#include "src/data/types.h"
-#include "src/distance.h"
-#include "src/threads/threadpool.h"
 
 namespace recsys {
 

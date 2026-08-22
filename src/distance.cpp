@@ -1,6 +1,10 @@
 #include "src/distance.h"
 
 #include <arm_neon.h>
+#include <cstddef>
+#include <folly/FBVector.h>
+
+#include "src/data/structs.h"
 
 namespace recsys {
 namespace {

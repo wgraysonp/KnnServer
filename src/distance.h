@@ -1,6 +1,8 @@
 #ifndef RECSYS_ENGINE_DISTANCE_H_
 #define RECSYS_ENGINE_DISTANCE_H_
 
+#include <folly/FBVector.h>
+
 #include <cstddef>
 #include "src/data/structs.h"
 
