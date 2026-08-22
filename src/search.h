@@ -19,7 +19,9 @@ namespace recsys {
 struct CompareResult {
   bool operator()(const EmbeddingSearchResult& a,
                   const EmbeddingSearchResult& b) {
-    return a.dist < b.dist;
+    if (a.dist != b.dist) return a.dist < b.dist;
+
+    return a.id < b.id;
   }
 };
 
@@ -145,7 +147,7 @@ folly::fbvector<EmbeddingSearchResult> FindNClosest(
         return a.dist < b.dist;
       });
   candidates.resize(effective_n_closest);
-  std::reverse(candidates.begin(), candidates.end());
+  std::sort(candidates.begin(), candidates.end(), CompareResult());
   return candidates;
 }
 }  // namespace recsys
