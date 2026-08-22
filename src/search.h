@@ -28,10 +28,25 @@ using KnnPriorityQueue =
                         folly::fbvector<EmbeddingSearchResult>, CompareResult>;
 
 template <typename T>
+double ComputeSquaredEuclideanDistance(const T* a, const T* b, size_t dim) {
+  double sum = 0.0;
+  for (size_t i = 0; i < dim; ++i) {
+    // cast to double to prevent possible overflow if T is int
+    double diff = static_cast<double>(a[i]) - static_cast<double>(b[i]);
+    sum += diff * diff;
+  }
+  return sum;
+}
+
 void ComputeAllDistancesInBatch(
     EmbeddingSearchResult* batch_results,
-    const folly::fbvector<unsigned long>& active_ids, const T* arena_base,
-    const T* query_vector, size_t embedding_dim, size_t start, size_t end);
+    const folly::fbvector<unsigned long>& active_ids, const float* arena_base,
+    const float* query_vector, size_t embedding_dim, size_t start, size_t end);
+
+void ComputeAllDistancesInBatch(
+    EmbeddingSearchResult* batch_results,
+    const folly::fbvector<unsigned long>& active_ids, const double* arena_base,
+    const double* query_vector, size_t embedding_dim, size_t start, size_t end);
 
 void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
                                            KnnPriorityQueue& mutable_queue,
@@ -51,7 +66,7 @@ folly::fbvector<EmbeddingSearchResult> FindNClosestInChunk(
        batch_start += BATCH_SIZE) {
     batch_end = std::min(batch_start + BATCH_SIZE, active_ids.size());
 
-    ComputeAllDistancesInBatch<T>(batch_results, active_ids, arena_base,
+    ComputeAllDistancesInBatch(batch_results, active_ids, arena_base,
                                   query_vector, embedding_dim, batch_start,
                                   batch_end);
     UpdateNClosestInChunkWithNewDistances(batch_results, closest_n_queue,
