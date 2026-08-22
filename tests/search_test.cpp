@@ -134,3 +134,33 @@ TYPED_TEST(SearchTests,
   ASSERT_EQ(res[0].id, expected_closest.id);
   ASSERT_EQ(res[0].dist, expected_closest.dist);
 }
+
+TYPED_TEST(SearchTests,
+           FindNClosestSuceedsWhenNumberOfWorkersIsLargerThanNumberOfEmbeddings) {
+  using Base = SearchTests<TypeParam>;
+
+  ASSERT_TRUE(Base::arena->SetEntry(
+      0, std::vector<TypeParam>(Base::embedding_dim, 0.5f)));
+  ASSERT_TRUE(Base::arena->SetEntry(
+      1, std::vector<TypeParam>(Base::embedding_dim, 0.6f)));
+  ASSERT_TRUE(Base::arena->SetEntry(
+      2, std::vector<TypeParam>(Base::embedding_dim, 0.8f)));
+  ASSERT_TRUE(Base::arena->SetEntry(
+      2, std::vector<TypeParam>(Base::embedding_dim, 0.9f)));
+
+  size_t n_workers = 5;
+  size_t n_closest = 1;
+
+  folly::fbvector<TypeParam> query_vec =
+      folly::fbvector<TypeParam>(Base::embedding_dim, 0.6f);
+
+  folly::fbvector<EmbeddingSearchResult> res =
+      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+
+  EmbeddingSearchResult expected_closest =
+      EmbeddingSearchResult{.id = 1, .dist = 0};
+
+  ASSERT_EQ(res.size(), 1);
+  ASSERT_EQ(res[0].id, expected_closest.id);
+  ASSERT_EQ(res[0].dist, expected_closest.dist);
+}
