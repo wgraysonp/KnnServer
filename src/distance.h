@@ -2,14 +2,23 @@
 #define RECSYS_ENGINE_DISTANCE_H_
 
 #include <cstddef>
+#include "src/data/structs.h"
 
 namespace recsys {
 
-template <typename T>
-double ComputeSquaredEuclideanDistance(const T* a, const T* b, size_t dim);
+// Computes the euclidean distance to the the query vector for all active
+// ids with indicices in [start, end) using neon intrinsics. Results are 
+// stored in batch_results
 
-template <typename T>
-double NeonComputeSquaredEuclideanDistance(const T* a, const T* b, size_t dim);
+void ComputeAllDistancesInBatch(
+    EmbeddingSearchResult* batch_results,
+    const folly::fbvector<unsigned long>& active_ids, const float* arena_base,
+    const float* query_vector, size_t embedding_dim, size_t start, size_t end);
+
+void ComputeAllDistancesInBatch(
+    EmbeddingSearchResult* batch_results,
+    const folly::fbvector<unsigned long>& active_ids, const double* arena_base,
+    const double* query_vector, size_t embedding_dim, size_t start, size_t end);
 
 }  // namespace recsys
 #endif  // RECSYS_ENGINE_DISTANCE_H_

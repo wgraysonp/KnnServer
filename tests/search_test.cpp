@@ -101,7 +101,7 @@ TYPED_TEST(SearchTests, FindNClosestFindsTheCloserOfFourEmbeddings) {
       Base::embedding_dim, static_cast<TypeParam>(0.6));
 
   folly::fbvector<EmbeddingSearchResult> res =
-      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+      FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
   EmbeddingSearchResult expected_closest =
       EmbeddingSearchResult{.id = 1, .dist = 0};
@@ -132,7 +132,7 @@ TYPED_TEST(SearchTests,
       folly::fbvector<TypeParam>(Base::embedding_dim, 0.6f);
 
   folly::fbvector<EmbeddingSearchResult> res =
-      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+      FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
   EmbeddingSearchResult expected_closest =
       EmbeddingSearchResult{.id = 1, .dist = 0};
@@ -167,7 +167,7 @@ TYPED_TEST(
       folly::fbvector<TypeParam>(Base::embedding_dim, 0.6f);
 
   folly::fbvector<EmbeddingSearchResult> res =
-      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+      FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
   EmbeddingSearchResult expected_closest =
       EmbeddingSearchResult{.id = 1, .dist = 0};
@@ -203,7 +203,7 @@ TYPED_TEST(
       folly::fbvector<TypeParam>(Base::embedding_dim, 0.6f);
 
   folly::fbvector<EmbeddingSearchResult> res =
-      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+      FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
   // expected order
   // 1. embedding_1 - distance 0
@@ -270,7 +270,7 @@ TYPED_TEST(
       folly::fbvector<TypeParam>(Base::embedding_dim, 0.6f);
 
   folly::fbvector<EmbeddingSearchResult> res =
-      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+      FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
   // expected order
   // 1. embedding_1 - distance 0
@@ -351,7 +351,7 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreads) {
       folly::fbvector<TypeParam>(Base::embedding_dim);
 
   folly::fbvector<EmbeddingSearchResult> res =
-      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+      FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
   // expected order (distances are squared):
   //   1. id 1 dist 1
@@ -430,7 +430,7 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreadsAnd
       folly::fbvector<TypeParam>(Base::embedding_dim);
 
   folly::fbvector<EmbeddingSearchResult> res =
-      FindNClosest<TypeParam>(*Base::arena, query_vec, n_closest, n_workers);
+      FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
   EmbeddingSearchResult expected_1 = closest_embeddings.at(0);
   EmbeddingSearchResult expected_2 = closest_embeddings.at(1);

@@ -8,132 +8,23 @@
 #include <queue>
 
 #include "src/arena.h"
+#include "src/distance.h"
 
 namespace recsys {
+namespace {
 
-void ComputeAllDistancesInBatch(
-    EmbeddingSearchResult* batch_results,
-    const folly::fbvector<unsigned long>& active_ids, const float* arena_base,
-    const float* query_vector, size_t embedding_dim, size_t start, size_t end) {
-  int processed_count = 0;
-  size_t remainder = (end - start) % 4;
-  unsigned long i;
+struct CompareResult {
+  bool operator()(const EmbeddingSearchResult& a,
+                  const EmbeddingSearchResult& b) {
+    if (a.dist != b.dist) return a.dist < b.dist;
 
-  // Handle remainder when the batch size is not divisible by 4
-  for (i = start; i < start + remainder; ++i) {
-    const float* search_vec = arena_base + active_ids[i] * embedding_dim;
-    double dist = ComputeSquaredEuclideanDistance<float>(
-        search_vec, query_vector, embedding_dim);
-    batch_results[processed_count] = EmbeddingSearchResult{active_ids[i], dist};
-    processed_count++;
+    return a.id < b.id;
   }
+};
 
-  // Compute distances for the majority of the batch using neon pipelines
-  for (; i < end; i += NUM_NEON_PIPELINES) {
-    float32x4_t out0 = vmovq_n_f32(0.0);
-    float32x4_t out1 = vmovq_n_f32(0.0);
-    float32x4_t out2 = vmovq_n_f32(0.0);
-    float32x4_t out3 = vmovq_n_f32(0.0);
-
-    const float* search_0 = arena_base + active_ids[i] * embedding_dim;
-    const float* search_1 = arena_base + active_ids[i + 1] * embedding_dim;
-    const float* search_2 = arena_base + active_ids[i + 2] * embedding_dim;
-    const float* search_3 = arena_base + active_ids[i + 3] * embedding_dim;
-
-    for (size_t idx = 0; idx < embedding_dim; idx += 4) {
-      float32x4_t query = vld1q_f32(&query_vector[idx]);
-
-      float32x4_t s0 = vld1q_f32(&search_0[idx]);
-      float32x4_t s1 = vld1q_f32(&search_1[idx]);
-      float32x4_t s2 = vld1q_f32(&search_2[idx]);
-      float32x4_t s3 = vld1q_f32(&search_3[idx]);
-
-      float32x4_t sub0 = vsubq_f32(query, s0);
-      float32x4_t sub1 = vsubq_f32(query, s1);
-      float32x4_t sub2 = vsubq_f32(query, s2);
-      float32x4_t sub3 = vsubq_f32(query, s3);
-
-      out0 = vfmaq_f32(out0, sub0, sub0);
-      out1 = vfmaq_f32(out1, sub1, sub1);
-      out2 = vfmaq_f32(out2, sub2, sub2);
-      out3 = vfmaq_f32(out3, sub3, sub3);
-    }
-
-    batch_results[processed_count] = EmbeddingSearchResult{
-        active_ids[i], static_cast<double>(vaddvq_f32(out0))};
-    batch_results[processed_count + 1] = EmbeddingSearchResult{
-        active_ids[i + 1], static_cast<double>(vaddvq_f32(out1))};
-    batch_results[processed_count + 2] = EmbeddingSearchResult{
-        active_ids[i + 2], static_cast<double>(vaddvq_f32(out2))};
-    batch_results[processed_count + 3] = EmbeddingSearchResult{
-        active_ids[i + 3], static_cast<double>(vaddvq_f32(out3))};
-
-    processed_count += 4;
-  }
-}
-
-void ComputeAllDistancesInBatch(
-    EmbeddingSearchResult* batch_results,
-    const folly::fbvector<unsigned long>& active_ids, const double* arena_base,
-    const double* query_vector, size_t embedding_dim, size_t start,
-    size_t end) {
-  int processed_count = 0;
-  size_t remainder = (end - start) % 4;
-  unsigned long i;
-
-  // Handle remainder when the batch size is not divisible by 4
-  for (i = start; i < start + remainder; ++i) {
-    const double* search_vec = arena_base + active_ids[i] * embedding_dim;
-    double dist = ComputeSquaredEuclideanDistance<double>(
-        search_vec, query_vector, embedding_dim);
-    batch_results[processed_count] = EmbeddingSearchResult{active_ids[i], dist};
-    processed_count++;
-  }
-
-  // Compute distances for the majority of the batch using neon pipelines
-  // NUM_NEON_PIPELINES = 4 on Apple Silicon M2
-  for (; i < end; i += NUM_NEON_PIPELINES) {
-    float64x2_t out0 = vmovq_n_f64(0.0);
-    float64x2_t out1 = vmovq_n_f64(0.0);
-    float64x2_t out2 = vmovq_n_f64(0.0);
-    float64x2_t out3 = vmovq_n_f64(0.0);
-
-    const double* search_0 = arena_base + active_ids[i] * embedding_dim;
-    const double* search_1 = arena_base + active_ids[i + 1] * embedding_dim;
-    const double* search_2 = arena_base + active_ids[i + 2] * embedding_dim;
-    const double* search_3 = arena_base + active_ids[i + 3] * embedding_dim;
-
-    for (size_t idx = 0; idx < embedding_dim; idx += 2) {
-      float64x2_t query = vld1q_f64(&query_vector[idx]);
-
-      float64x2_t s0 = vld1q_f64(&search_0[idx]);
-      float64x2_t s1 = vld1q_f64(&search_1[idx]);
-      float64x2_t s2 = vld1q_f64(&search_2[idx]);
-      float64x2_t s3 = vld1q_f64(&search_3[idx]);
-
-      float64x2_t sub0 = vsubq_f64(query, s0);
-      float64x2_t sub1 = vsubq_f64(query, s1);
-      float64x2_t sub2 = vsubq_f64(query, s2);
-      float64x2_t sub3 = vsubq_f64(query, s3);
-
-      out0 = vfmaq_f64(out0, sub0, sub0);
-      out1 = vfmaq_f64(out1, sub1, sub1);
-      out2 = vfmaq_f64(out2, sub2, sub2);
-      out3 = vfmaq_f64(out3, sub3, sub3);
-    }
-
-    batch_results[processed_count] = EmbeddingSearchResult{
-        active_ids[i], static_cast<double>(vaddvq_f64(out0))};
-    batch_results[processed_count + 1] = EmbeddingSearchResult{
-        active_ids[i + 1], static_cast<double>(vaddvq_f64(out1))};
-    batch_results[processed_count + 2] = EmbeddingSearchResult{
-        active_ids[i + 2], static_cast<double>(vaddvq_f64(out2))};
-    batch_results[processed_count + 3] = EmbeddingSearchResult{
-        active_ids[i + 3], static_cast<double>(vaddvq_f64(out3))};
-
-    processed_count += 4;
-  }
-}
+using KnnPriorityQueue =
+    std::priority_queue<EmbeddingSearchResult,
+                        folly::fbvector<EmbeddingSearchResult>, CompareResult>;
 
 void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
                                            KnnPriorityQueue& mutable_queue,
@@ -155,6 +46,117 @@ void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
       worst_distance = mutable_queue.top().dist;
     }
   }
+}
+
+template <typename T>
+folly::fbvector<EmbeddingSearchResult> FindNClosestInChunk(
+    const folly::fbvector<unsigned long>& active_ids, const T* arena_base,
+    const T* query_vector, size_t n_closest, size_t embedding_dim,
+    size_t chunk_start, size_t chunk_end) {
+  KnnPriorityQueue closest_n_queue;
+  EmbeddingSearchResult batch_results[BATCH_SIZE];
+  size_t batch_end;
+  size_t batch_start;
+  size_t batch_length;
+
+  for (batch_start = chunk_start; batch_start < chunk_end;
+       batch_start += BATCH_SIZE) {
+    batch_end = std::min(batch_start + BATCH_SIZE, active_ids.size());
+    batch_length = batch_end - batch_start;
+
+    ComputeAllDistancesInBatch(batch_results, active_ids, arena_base,
+                               query_vector, embedding_dim, batch_start,
+                               batch_end);
+    UpdateNClosestInChunkWithNewDistances(batch_results, closest_n_queue,
+                                          batch_length, n_closest);
+  }
+  folly::fbvector<EmbeddingSearchResult> chunk_results;
+
+  while (!closest_n_queue.empty()) {
+    EmbeddingSearchResult res = closest_n_queue.top();
+    chunk_results.push_back(std::move(res));
+    closest_n_queue.pop();
+  }
+  return chunk_results;
+}
+
+template <typename T>
+folly::fbvector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
+    const MemoryArena& arena, const folly::fbvector<T>& query_vector,
+    size_t n_closest, size_t n_workers) {
+  const folly::fbvector<unsigned long>& active_ids = arena.GetActiveIds();
+
+  const T* query_data = query_vector.data();
+  const T* arena_base = arena.GetArenaView<T>();
+
+  size_t total_items = active_ids.size();
+  size_t embedding_dim = arena.GetEmbeddingDim();
+
+  ThreadPool bundle = ThreadPool(n_workers);
+
+  size_t embeddings_per_worker = total_items / n_workers;
+  size_t remainder = total_items % n_workers;
+  size_t start = 0;
+  folly::fbvector<std::future<folly::fbvector<EmbeddingSearchResult>>>
+      search_results;
+
+  for (size_t i = 0; i < n_workers; ++i) {
+    size_t chunk_size = embeddings_per_worker + (i < remainder ? 1 : 0);
+    size_t end = start + chunk_size;
+    search_results.emplace_back(
+        bundle.Add([&arena_base, &embedding_dim, &query_data, &n_closest,
+                    &active_ids, start, end]() {
+          return FindNClosestInChunk(active_ids, arena_base, query_data,
+                                     n_closest, embedding_dim, start, end);
+        }));
+    start = end;
+  }
+
+  folly::fbvector<EmbeddingSearchResult> return_vec;
+
+  for (auto& fut : search_results) {
+    auto res = fut.get();
+    return_vec.insert(return_vec.end(), std::make_move_iterator(res.begin()),
+                      std::make_move_iterator(res.end()));
+  }
+  return return_vec;
+}
+
+template <typename T>
+folly::fbvector<EmbeddingSearchResult> FindNClosestImplementation(
+    const MemoryArena& arena, const folly::fbvector<T>& query_vector,
+    size_t n_closest, size_t n_workers) {
+  size_t effective_n_closest =
+      std::min(n_closest, arena.GetTotalActiveEmbeddings());
+
+  folly::fbvector<EmbeddingSearchResult> candidates =
+      ComputeInitialCanidiateEmbeddings(arena, query_vector,
+                                        effective_n_closest, n_workers);
+
+  std::nth_element(
+      candidates.begin(), candidates.begin() + effective_n_closest,
+      candidates.end(),
+      [](const EmbeddingSearchResult& a, const EmbeddingSearchResult& b) {
+        return a.dist < b.dist;
+      });
+  candidates.resize(effective_n_closest);
+  std::sort(candidates.begin(), candidates.end(), CompareResult());
+  return candidates;
+}
+}  // namespace
+
+folly::fbvector<EmbeddingSearchResult> FindNClosest(
+    const MemoryArena& arena, const folly::fbvector<float>& query_vector,
+    size_t n_closest, size_t n_workers) {
+  return FindNClosestImplementation<float>(arena, query_vector, n_closest,
+                                           n_workers);
+}
+
+folly::fbvector<EmbeddingSearchResult> FindNClosest(
+    const MemoryArena& arena, const folly::fbvector<double>& query_vector,
+    size_t n_closest, size_t n_workers) {
+  return FindNClosestImplementation<double>(arena, query_vector, n_closest,
+                                            n_workers);
 }
 
 }  // namespace recsys

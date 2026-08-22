@@ -35,6 +35,10 @@ target_link_libraries(arena_memory
 target_include_directories(arena_memory PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(distance src/distance.cpp)
+target_link_libraries(distance
+       PUBLIC
+         data_module
+)
 target_include_directories(distance PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(search src/search.cpp)
@@ -42,6 +46,7 @@ target_link_libraries(search
         PUBLIC
             arena_memory
         PRIVATE
+            distance
             service_module
             data_module
             threads

@@ -33,7 +33,7 @@ int main() {
   auto start = std::chrono::high_resolution_clock::now();
 
   folly::fbvector<EmbeddingSearchResult> result =
-      FindNClosest<float>(*arena, query_vector, 10);
+      FindNClosest(*arena, query_vector, 10);
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> duration = end - start;
