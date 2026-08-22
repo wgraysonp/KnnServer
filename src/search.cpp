@@ -29,9 +29,20 @@ void ComputeAllDistancesInBatch<float>(
     const folly::fbvector<unsigned long>& active_ids, const float* arena_base,
     const float* query_vector, size_t embedding_dim, size_t start, size_t end) {
   int processed_count = 0;
+  size_t remainder = (end - start) % 4;
+  unsigned long i;
 
-  for (unsigned long i = start; i < std::min(end, active_ids.size());
-       i += NUM_NEON_PIPELINES) {
+  // Handle remainder when the batch size is not divisible by 4
+  for (i = start; i < start + remainder; ++i) {
+    const float* search_vec = arena_base + active_ids[i] * embedding_dim;
+    double dist = ComputeSquaredEuclideanDistance<float>(
+        search_vec, query_vector, embedding_dim);
+    batch_results[processed_count] = EmbeddingSearchResult{active_ids[i], dist};
+    processed_count++;
+  }
+
+  // Compute distances for the majority of the batch using neon pipelines
+  for (; i < end; i += NUM_NEON_PIPELINES) {
     float32x4_t out0 = vmovq_n_f32(0.0);
     float32x4_t out1 = vmovq_n_f32(0.0);
     float32x4_t out2 = vmovq_n_f32(0.0);

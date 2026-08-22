@@ -35,9 +35,9 @@ ProcessRequestAndReturnSearchResults(const MemoryArena& arena,
   // 2. prepare response for search
   // 3. do the search
   // 4. package response and return it
-  
+
   // temp placeholder to keep Werror Wunused-parameter from complaining
-  if (arena.GetEmbeddingDim() != request.embedding_dim){
+  if (arena.GetEmbeddingDim() != request.embedding_dim) {
     return folly::makeUnexpected(SearchError::InvalidQuery);
   }
 

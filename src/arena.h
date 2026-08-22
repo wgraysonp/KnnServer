@@ -29,9 +29,7 @@ class MemoryArena {
     return active_ids_;
   }
 
-  const folly::fbvector<bool>& GetIdStatusMap() const {
-    return is_id_active_;
-  }
+  const folly::fbvector<bool>& GetIdStatusMap() const { return is_id_active_; }
 
   template <typename T>
   const T* GetArenaView() const {
@@ -48,7 +46,7 @@ class MemoryArena {
 
  private:
   MemoryArena(size_t capacity, size_t embedding_dim, EmbeddingDataType type);
-  
+
   template <typename T>
   folly::Expected<folly::Unit, AllocError> ValidateAddedEmbedding(
       size_t index, std::span<const T> embedding) {

@@ -49,7 +49,8 @@ folly::fbvector<EmbeddingSearchResult> FindNClosestInChunk(
 
   for (batch_start = chunk_start; batch_start < chunk_end;
        batch_start += BATCH_SIZE) {
-    batch_end = batch_start + BATCH_SIZE;
+    batch_end = std::min(batch_start + BATCH_SIZE, active_ids.size());
+
     ComputeAllDistancesInBatch<T>(batch_results, active_ids, arena_base,
                                   query_vector, embedding_dim, batch_start,
                                   batch_end);
@@ -69,7 +70,7 @@ folly::fbvector<EmbeddingSearchResult> FindNClosestInChunk(
 template <typename T>
 folly::fbvector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
     const MemoryArena& arena, const folly::fbvector<T>& query_vector,
-    size_t n_closest) {
+    size_t n_closest, size_t n_workers) {
   const folly::fbvector<unsigned long>& active_ids = arena.GetActiveIds();
 
   const T* query_data = query_vector.data();
@@ -78,8 +79,7 @@ folly::fbvector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
   size_t total_items = active_ids.size();
   size_t embedding_dim = arena.GetEmbeddingDim();
 
-  ThreadPool bundle = ThreadPool();
-  size_t n_workers = bundle.GetPoolSize();
+  ThreadPool bundle = ThreadPool(n_workers);
 
   size_t embeddings_per_worker = total_items / n_workers;
   size_t remainder = total_items % n_workers;
@@ -112,9 +112,10 @@ folly::fbvector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
 template <typename T>
 folly::fbvector<EmbeddingSearchResult> FindNClosest(
     const MemoryArena& arena, const folly::fbvector<T>& query_vector,
-    size_t n_closest) {
+    size_t n_closest, size_t n_workers = 4) {
   folly::fbvector<EmbeddingSearchResult> candidates =
-      ComputeInitialCanidiateEmbeddings(arena, query_vector, n_closest);
+      ComputeInitialCanidiateEmbeddings(arena, query_vector, n_closest,
+                                        n_workers);
 
   std::nth_element(
       candidates.begin(), candidates.begin() + n_closest, candidates.end(),

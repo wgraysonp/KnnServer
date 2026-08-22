@@ -30,15 +30,42 @@ class SearchTests : public ::testing::Test {
   }
 };
 
-TEST_F(SearchTests, FindNClosestFindsTheCloserOfTwoEmbeddings) {
+TEST_F(SearchTests, FindNClosestFindsTheCloserOfFourEmbeddings) {
   arena->SetEntry(0, std::vector<float>(embedding_dim, 0.5f));
   arena->SetEntry(1, std::vector<float>(embedding_dim, 0.6f));
+  arena->SetEntry(2, std::vector<float>(embedding_dim, 0.8f));
+  arena->SetEntry(3, std::vector<float>(embedding_dim, 0.7f));
+
+  size_t n_workers = 1;
+  size_t n_closest = 1;
 
   folly::fbvector<float> query_vec =
       folly::fbvector<float>(embedding_dim, 0.6f);
 
   folly::fbvector<EmbeddingSearchResult> res =
-      FindNClosest<float>(*arena, query_vec, 1);
+      FindNClosest<float>(*arena, query_vec, n_closest, n_workers);
+
+  EmbeddingSearchResult expected_closest =
+      EmbeddingSearchResult{.id = 1, .dist = 0};
+
+  ASSERT_EQ(res.size(), 1);
+  ASSERT_EQ(res[0].id, expected_closest.id);
+  ASSERT_EQ(res[0].dist, expected_closest.dist);
+}
+
+TEST_F(SearchTests, FindNClosestSuceedsWhenWorkerChunkSizeIsNotMultipleOfFour) {
+  arena->SetEntry(0, std::vector<float>(embedding_dim, 0.5f));
+  arena->SetEntry(1, std::vector<float>(embedding_dim, 0.6f));
+  arena->SetEntry(2, std::vector<float>(embedding_dim, 0.8f));
+
+  size_t n_workers = 1;
+  size_t n_closest = 1;
+
+  folly::fbvector<float> query_vec =
+      folly::fbvector<float>(embedding_dim, 0.6f);
+
+  folly::fbvector<EmbeddingSearchResult> res =
+      FindNClosest<float>(*arena, query_vec, n_closest, n_workers);
 
   EmbeddingSearchResult expected_closest =
       EmbeddingSearchResult{.id = 1, .dist = 0};

@@ -3,7 +3,8 @@ project(RecSysEngine LANGUAGES CXX)
 
 # Require C++20
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_SiTANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(Boost_NO_BOOST_CMAKE OFF)
 
@@ -12,10 +13,10 @@ list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew")
 find_package(folly CONFIG REQUIRED)
 find_package(Threads REQUIRED)
 
-if(APPLE)
-    include_directories(/opt/homebrew/include)
-    link_directories(/opt/homebrew/lib)
-endif()
+# if(APPLE)
+#     include_directories(/opt/homebrew/include)
+#     link_directories(/opt/homebrew/lib)
+# endif()
 
 add_subdirectory(src/data)
 add_subdirectory(src/service)
