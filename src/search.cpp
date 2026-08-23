@@ -1,6 +1,7 @@
 #include "src/search.h"
 
 #include <folly/FBVector.h>
+#include <folly/futures/Future.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -11,6 +12,7 @@
 #include "src/data/structs.h"
 #include "src/data/types.h"
 #include "src/distance.h"
+#include "src/threads/custom_folly_pool.h"
 #include "src/threads/threadpool.h"
 
 namespace recsys {
@@ -95,34 +97,37 @@ folly::fbvector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
   const size_t total_items = active_ids.size();
   const size_t embedding_dim = arena.GetEmbeddingDim();
 
-  ThreadPool bundle = ThreadPool(n_workers);
+  FollyPool bundle(n_workers);
 
   const size_t embeddings_per_worker = total_items / n_workers;
   const size_t remainder = total_items % n_workers;
   size_t start = 0;
-  folly::fbvector<std::future<folly::fbvector<EmbeddingSearchResult>>>
-      search_results;
+  folly::fbvector<folly::Future<folly::fbvector<EmbeddingSearchResult>>>
+      search_results_futures;
 
   for (size_t i = 0; i < n_workers; ++i) {
     size_t chunk_size = embeddings_per_worker + (i < remainder ? 1 : 0);
     size_t end = start + chunk_size;
-    search_results.emplace_back(
-        bundle.Add([&arena_base, &embedding_dim, &query_data, &n_closest,
-                    &active_ids, start, end]() {
+    search_results_futures.emplace_back(
+        folly::via(&bundle, [&arena_base, &embedding_dim, &query_data,
+                             &n_closest, &active_ids, start, end]() {
           return FindNClosestInChunk(active_ids, arena_base, query_data,
                                      n_closest, embedding_dim, start, end);
         }));
     start = end;
   }
 
-  folly::fbvector<EmbeddingSearchResult> return_vec;
-
-  for (auto& fut : search_results) {
-    auto res = fut.get();
-    return_vec.insert(return_vec.end(), std::make_move_iterator(res.begin()),
-                      std::make_move_iterator(res.end()));
-  }
-  return return_vec;
+  return folly::collect(search_results_futures).via(&bundle)
+      .thenValue([](std::vector<folly::fbvector<EmbeddingSearchResult>>&&
+                        search_results) {
+        folly::fbvector<EmbeddingSearchResult> return_vec;
+        for (auto& res : search_results) {
+          return_vec.insert(return_vec.end(),
+                            std::make_move_iterator(res.begin()),
+                            std::make_move_iterator(res.end()));
+        }
+        return return_vec;
+      }).get();
 }
 
 template <typename T>

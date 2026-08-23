@@ -24,6 +24,13 @@ add_subdirectory(src/service)
 add_library(threads src/threads/threadpool.cpp)
 target_include_directories(threads PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_library(customfollythreads src/threads/custom_folly_pool.cc)
+target_link_libraries(customfollythreads
+        PRIVATE
+            Folly::folly
+)
+target_include_directories(customfollythreads PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(arena_memory src/arena.cpp)
 target_link_libraries(arena_memory 
         PUBLIC 
@@ -50,6 +57,7 @@ target_link_libraries(search
             service_module
             data_module
             threads
+            customfollythreads
             Folly::folly
 )
 target_include_directories(search PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
