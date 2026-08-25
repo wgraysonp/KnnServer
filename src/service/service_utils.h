@@ -6,10 +6,12 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "src/data/consts.h"
+#include "src/data/gen-cpp2/data_types.h"
 #include "src/data/structs.h"
-#include "src/data/types.h"
+#include "src/service/gen-cpp2/service_types.h"
 
-namespace recsys {
+namespace recsys::knn_server {
 
 // Checks that the size of the raw bytes of the query vector sent in the
 // request match the request datatype and embedding dimension.
@@ -17,8 +19,8 @@ folly::Expected<folly::Unit, SearchRequestError> ValidateRequestDataSize(
     const QueryRequest& request);
 
 // Verifies that the requested library to search within exists and is valid.
-folly::Expected<folly::Unit, SearchRequestError>
-ValidateRequestSearchLibrary(const QueryRequest& request);
+folly::Expected<folly::Unit, SearchRequestError> ValidateRequestSearchLibrary(
+    const QueryRequest& request);
 
 // Temporary implementation assuming the request consists only of a single
 // float vector.
@@ -26,6 +28,6 @@ ValidateRequestSearchLibrary(const QueryRequest& request);
 folly::Expected<folly::Unit, SearchRequestError> ValidateSearchRequest(
     const QueryRequest& request);
 
-}  // namespace recsys
+}  // namespace recsys::knn_server
 
 #endif  // RECSYS_ENGINE_SERVICE_SERVICE_UTILS_H_

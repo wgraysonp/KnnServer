@@ -9,21 +9,23 @@
 #include <queue>
 
 #include "src/arena.h"
-#include "src/data/structs.h"
-#include "src/data/types.h"
+#include "src/data/consts.h"
+#include "src/data/gen-cpp2/data_types.h"
 #include "src/distance.h"
 #include "src/threads/custom_folly_pool.h"
 #include "src/threads/threadpool.h"
 
-namespace recsys {
+namespace recsys::knn_server {
 namespace {
 
 struct CompareResult {
   bool operator()(const EmbeddingSearchResult& a,
                   const EmbeddingSearchResult& b) {
-    if (a.dist != b.dist) return a.dist < b.dist;
+    if (a.distance_ref().value() != b.distance_ref().value()) {
+      return a.distance_ref().value() < b.distance_ref().value();
+    }
 
-    return a.id < b.id;
+    return a.id_ref().value() < b.id_ref().value();
   }
 };
 
@@ -42,13 +44,14 @@ void UpdateNClosestInChunkWithNewDistances(EmbeddingSearchResult* batch_results,
     if (n_processed < n_closest) {
       mutable_queue.push(batch_results[res_idx]);
       n_processed++;
-      worst_distance = std::max(worst_distance, batch_results[res_idx].dist);
+      worst_distance = std::max(worst_distance,
+                                batch_results[res_idx].distance_ref().value());
       continue;
     }
-    if (batch_results[res_idx].dist < worst_distance) {
+    if (batch_results[res_idx].distance_ref().value() < worst_distance) {
       mutable_queue.pop();
       mutable_queue.push(batch_results[res_idx]);
-      worst_distance = mutable_queue.top().dist;
+      worst_distance = mutable_queue.top().distance_ref().value();
     }
   }
 }
@@ -117,7 +120,8 @@ folly::fbvector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
     start = end;
   }
 
-  return folly::collect(search_results_futures).via(&bundle)
+  return folly::collect(search_results_futures)
+      .via(&bundle)
       .thenValue([](std::vector<folly::fbvector<EmbeddingSearchResult>>&&
                         search_results) {
         folly::fbvector<EmbeddingSearchResult> return_vec;
@@ -127,7 +131,8 @@ folly::fbvector<EmbeddingSearchResult> ComputeInitialCanidiateEmbeddings(
                             std::make_move_iterator(res.end()));
         }
         return return_vec;
-      }).get();
+      })
+      .get();
 }
 
 template <typename T>
@@ -141,12 +146,8 @@ folly::fbvector<EmbeddingSearchResult> FindNClosestImplementation(
       ComputeInitialCanidiateEmbeddings(arena, query_vector,
                                         effective_n_closest, n_workers);
 
-  std::nth_element(
-      candidates.begin(), candidates.begin() + effective_n_closest,
-      candidates.end(),
-      [](const EmbeddingSearchResult& a, const EmbeddingSearchResult& b) {
-        return a.dist < b.dist;
-      });
+  std::nth_element(candidates.begin(), candidates.begin() + effective_n_closest,
+                   candidates.end(), CompareResult());
   candidates.resize(effective_n_closest);
   std::sort(candidates.begin(), candidates.end(), CompareResult());
   return candidates;
@@ -167,4 +168,4 @@ folly::fbvector<EmbeddingSearchResult> FindNClosest(
                                             n_workers);
 }
 
-}  // namespace recsys
+}  // namespace recsys::knn_server

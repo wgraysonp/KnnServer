@@ -1,16 +1,18 @@
 #include "src/distance.h"
 
 #include <arm_neon.h>
-#include <cstddef>
 #include <folly/FBVector.h>
 
-#include "src/data/structs.h"
+#include <cstddef>
 
-namespace recsys {
+#include "src/data/consts.h"
+#include "src/data/gen-cpp2/data_types.h"
+
+namespace recsys::knn_server {
 namespace {
 
-double NeonComputeSquaredEuclideanDistance(const float* a,
-                                                  const float* b, size_t dim) {
+double NeonComputeSquaredEuclideanDistance(const float* a, const float* b,
+                                           size_t dim) {
   float32x4_t out0 = vmovq_n_f32(0.0);
   float32x4_t out1 = vmovq_n_f32(0.0);
   float32x4_t out2 = vmovq_n_f32(0.0);
@@ -47,8 +49,8 @@ double NeonComputeSquaredEuclideanDistance(const float* a,
   return static_cast<double>(sum_sq_diff);
 }
 
-double NeonComputeSquaredEuclideanDistance(const double* a,
-                                                  const double* b, size_t dim) {
+double NeonComputeSquaredEuclideanDistance(const double* a, const double* b,
+                                           size_t dim) {
   float64x2_t out0 = vmovq_n_f64(0.0);
   float64x2_t out1 = vmovq_n_f64(0.0);
   float64x2_t out2 = vmovq_n_f64(0.0);
@@ -84,7 +86,7 @@ double NeonComputeSquaredEuclideanDistance(const double* a,
 
   return static_cast<double>(sum_sq_diff);
 }
-} // namespace
+}  // namespace
 
 void ComputeAllDistancesInBatch(
     EmbeddingSearchResult* batch_results,
@@ -97,9 +99,12 @@ void ComputeAllDistancesInBatch(
   // Handle remainder when the batch size is not divisible by 4
   for (i = start; i < start + remainder; ++i) {
     const float* search_vec = arena_base + active_ids[i] * embedding_dim;
-    double dist = NeonComputeSquaredEuclideanDistance(
-        search_vec, query_vector, embedding_dim);
-    batch_results[processed_count] = EmbeddingSearchResult{active_ids[i], dist};
+    double dist = NeonComputeSquaredEuclideanDistance(search_vec, query_vector,
+                                                      embedding_dim);
+
+    batch_results[processed_count].id_ref() = active_ids[i];
+    batch_results[processed_count].distance_ref() = dist;
+
     processed_count++;
   }
 
@@ -134,14 +139,21 @@ void ComputeAllDistancesInBatch(
       out3 = vfmaq_f32(out3, sub3, sub3);
     }
 
-    batch_results[processed_count] = EmbeddingSearchResult{
-        active_ids[i], static_cast<double>(vaddvq_f32(out0))};
-    batch_results[processed_count + 1] = EmbeddingSearchResult{
-        active_ids[i + 1], static_cast<double>(vaddvq_f32(out1))};
-    batch_results[processed_count + 2] = EmbeddingSearchResult{
-        active_ids[i + 2], static_cast<double>(vaddvq_f32(out2))};
-    batch_results[processed_count + 3] = EmbeddingSearchResult{
-        active_ids[i + 3], static_cast<double>(vaddvq_f32(out3))};
+    batch_results[processed_count].id_ref() = active_ids[i];
+    batch_results[processed_count].distance_ref() =
+        static_cast<double>(vaddvq_f32(out0));
+
+    batch_results[processed_count + 1].id_ref() = active_ids[i + 1];
+    batch_results[processed_count + 1].distance_ref() =
+        static_cast<double>(vaddvq_f32(out1));
+
+    batch_results[processed_count + 2].id_ref() = active_ids[i + 2];
+    batch_results[processed_count + 2].distance_ref() =
+        static_cast<double>(vaddvq_f32(out2));
+
+    batch_results[processed_count + 3].id_ref() = active_ids[i + 3];
+    batch_results[processed_count + 3].distance_ref() =
+        static_cast<double>(vaddvq_f32(out3));
 
     processed_count += 4;
   }
@@ -159,9 +171,12 @@ void ComputeAllDistancesInBatch(
   // Handle remainder when the batch size is not divisible by 4
   for (i = start; i < start + remainder; ++i) {
     const double* search_vec = arena_base + active_ids[i] * embedding_dim;
-    double dist = NeonComputeSquaredEuclideanDistance(
-        search_vec, query_vector, embedding_dim);
-    batch_results[processed_count] = EmbeddingSearchResult{active_ids[i], dist};
+    double dist = NeonComputeSquaredEuclideanDistance(search_vec, query_vector,
+                                                      embedding_dim);
+
+    batch_results[processed_count].id_ref() = active_ids[i];
+    batch_results[processed_count].distance_ref() = dist;
+
     processed_count++;
   }
 
@@ -197,17 +212,24 @@ void ComputeAllDistancesInBatch(
       out3 = vfmaq_f64(out3, sub3, sub3);
     }
 
-    batch_results[processed_count] = EmbeddingSearchResult{
-        active_ids[i], static_cast<double>(vaddvq_f64(out0))};
-    batch_results[processed_count + 1] = EmbeddingSearchResult{
-        active_ids[i + 1], static_cast<double>(vaddvq_f64(out1))};
-    batch_results[processed_count + 2] = EmbeddingSearchResult{
-        active_ids[i + 2], static_cast<double>(vaddvq_f64(out2))};
-    batch_results[processed_count + 3] = EmbeddingSearchResult{
-        active_ids[i + 3], static_cast<double>(vaddvq_f64(out3))};
+    batch_results[processed_count].id_ref() = active_ids[i];
+    batch_results[processed_count].distance_ref() =
+        static_cast<double>(vaddvq_f64(out0));
+
+    batch_results[processed_count + 1].id_ref() = active_ids[i + 1];
+    batch_results[processed_count + 1].distance_ref() =
+        static_cast<double>(vaddvq_f64(out1));
+
+    batch_results[processed_count + 2].id_ref() = active_ids[i + 2];
+    batch_results[processed_count + 2].distance_ref() =
+        static_cast<double>(vaddvq_f64(out2));
+
+    batch_results[processed_count + 3].id_ref() = active_ids[i + 3];
+    batch_results[processed_count + 3].distance_ref() =
+        static_cast<double>(vaddvq_f64(out3));
 
     processed_count += 4;
   }
 }
 
-}  // namespace recsys
+}  // namespace recsys::knn_server

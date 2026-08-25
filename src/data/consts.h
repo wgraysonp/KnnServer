@@ -1,7 +1,9 @@
-#ifndef RECSYS_ENGINE_DATA_TYPES_H_
-#define RECSYS_ENGINE_DATA_TYPES_H_
+#ifndef RECSYS_ENGINE_DATA_CONSTS_H_
+#define RECSYS_ENGINE_DATA_CONSTS_H_
 
-namespace recsys {
+#include <cstddef>
+
+namespace recsys::knn_server {
 constexpr size_t EMBEDDING_DIM = 128;
 constexpr size_t BATCH_SIZE = 256;
 constexpr size_t NUM_NEON_PIPELINES = 4;
@@ -9,11 +11,6 @@ constexpr size_t NUM_NEON_PIPELINES = 4;
 enum class InvalidArgmentError {
   EnumTypeUndefined,
   TypeDisagreesWithArenaType,
-};
-
-enum class EmbeddingDataType {
-  Float64_t,
-  Float32_t,
 };
 
 enum class SearchRequestError {
@@ -35,7 +32,5 @@ enum class StartupError {
   Unknown
 };
 
-enum class ResponseStatus { StatusOk, StatusFailed };
-
-} // namespace recsys
-#endif // RECSYS_ENGINE_DATA_TYPES_H_
+}  // namespace recsys::knn_server
+#endif  // RECSYS_ENGINE_DATA_CONSTS_H_

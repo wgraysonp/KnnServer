@@ -15,10 +15,10 @@
 #include <unordered_set>
 
 #include "src/arena.h"
+#include "src/data/consts.h"
 #include "src/data/structs.h"
-#include "src/data/types.h"
 
-using namespace recsys;
+using namespace recsys::knn_server;
 using ::testing::FloatEq;
 using ::testing::Pointwise;
 using ImplementationType = ::testing::Types<float, double>;
@@ -103,12 +103,14 @@ TYPED_TEST(SearchTests, FindNClosestFindsTheCloserOfFourEmbeddings) {
   folly::fbvector<EmbeddingSearchResult> res =
       FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
-  EmbeddingSearchResult expected_closest =
-      EmbeddingSearchResult{.id = 1, .dist = 0};
+  EmbeddingSearchResult expected_closest;
+  expected_closest.id_ref() = 1;
+  expected_closest.distance_ref() = 0;
 
   ASSERT_EQ(res.size(), 1);
-  ASSERT_EQ(res[0].id, expected_closest.id);
-  ASSERT_THAT(res[0].dist, IsNearlyEqual(expected_closest.dist));
+  ASSERT_EQ(res[0].id_ref().value(), expected_closest.id);
+  ASSERT_THAT(res[0].distance_ref().value(),
+              IsNearlyEqual(expected_closest.dist));
 }
 
 TYPED_TEST(SearchTests,
@@ -169,8 +171,9 @@ TYPED_TEST(
   folly::fbvector<EmbeddingSearchResult> res =
       FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
-  EmbeddingSearchResult expected_closest =
-      EmbeddingSearchResult{.id = 1, .dist = 0};
+  EmbeddingSearchResult expected_closest;
+  expected_closest.id_ref() = 1;
+  expected_closest.distance_ref() = 0;
 
   ASSERT_EQ(res.size(), 1);
   EXPECT_EQ(res[0].id, expected_closest.id);

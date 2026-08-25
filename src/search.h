@@ -7,8 +7,9 @@
 
 #include "src/arena.h"
 #include "src/data/structs.h"
+#include "src/data/gen-cpp2/data_types.h"
 
-namespace recsys {
+namespace recsys::knn_server {
 
 // The main KNN search functions. These find the n_closest embeddings
 // to the query_vector among the active embeddings in the arena. The function
@@ -23,5 +24,5 @@ folly::fbvector<EmbeddingSearchResult> FindNClosest(
     const MemoryArena& arena, const folly::fbvector<double>& query_vector,
     const size_t n_closest, const size_t n_workers = 4);
 
-}  // namespace recsys
+}  // namespace recsys::knn_server
 #endif  // RECSYS_ENGINE_SEARCH_H_

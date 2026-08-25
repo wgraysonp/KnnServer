@@ -4,12 +4,13 @@
 #include <folly/FBVector.h>
 
 #include <cstddef>
-#include "src/data/structs.h"
 
-namespace recsys {
+#include "src/data/gen-cpp2/data_types.h"
+
+namespace recsys::knn_server {
 
 // Computes the euclidean distance to the the query vector for all active
-// ids with indicices in [start, end) using neon intrinsics. Results are 
+// ids with indicices in [start, end) using neon intrinsics. Results are
 // stored in batch_results
 
 void ComputeAllDistancesInBatch(
@@ -22,5 +23,5 @@ void ComputeAllDistancesInBatch(
     const folly::fbvector<unsigned long>& active_ids, const double* arena_base,
     const double* query_vector, size_t embedding_dim, size_t start, size_t end);
 
-}  // namespace recsys
+}  // namespace recsys::knn_server
 #endif  // RECSYS_ENGINE_DISTANCE_H_

@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 
-namespace recsys {
+namespace recsys::knn_server {
 class FollyPool : public folly::Executor {
  public:
   FollyPool(size_t num_threads = std::thread::hardware_concurrency());
@@ -35,6 +35,6 @@ class FollyPool : public folly::Executor {
   bool stop_ = false;
 };
 
-}  // namespace recsys
+}  // namespace recsys::knn_server
 
 #endif  // RECSYS_ENGINE_THREADS_CUSTOM_FOLLY_POOL_H_

@@ -3,11 +3,11 @@
 
 #include <cstddef>
 
-#include "src/data/types.h"
+#include "src/data/gen-cpp2/data_types.h"
 
-namespace recsys {
+namespace recsys::knn_server {
 
 size_t GetTypeSize(EmbeddingDataType type);
 
-}  // namespace recsys
+}  // namespace recsys::knn_server
 #endif  // RECSYS_ENGINE_DATA_UTILS_H_

@@ -7,12 +7,13 @@
 #include <memory>
 
 #include "src/arena.h"
-#include "src/data/types.h"
+#include "src/data/consts.h"
+#include "src/data/gen-cpp2/data_types.h"
 #include "src/macros.h"
 #include "src/search.h"
 #include "src/service/pipelines.h"
 
-using namespace recsys;
+using namespace recsys::knn_server;
 
 int main() {
   std::cout << "Initializing memory arena via Cmake configuration..."
@@ -42,7 +43,7 @@ int main() {
 
   printf("Number of Items: %lu\n", result.size());
   for (const auto& item : result) {
-    printf("Vector id: %lu\n", item.id);
+    printf("Vector id: %lu\n", item.id_ref().value());
   }
 
   return 0;

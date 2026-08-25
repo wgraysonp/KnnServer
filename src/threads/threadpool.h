@@ -8,7 +8,7 @@
 #include <queue>
 #include <thread>
 
-namespace recsys {
+namespace recsys::knn_server {
 
 class ThreadPool {
  public:
@@ -37,7 +37,7 @@ class ThreadPool {
     cv_.notify_one();
     return res;
   }
-  size_t GetPoolSize() {return pool_size_;}
+  size_t GetPoolSize() { return pool_size_; }
   void WaitForAll();
 
  private:
@@ -51,6 +51,6 @@ class ThreadPool {
   bool stop_ = false;
 };
 
-}  // namespace recsys
+}  // namespace recsys::knn_server
 
 #endif  // RECSYS_ENGINE_THREADS_THREADPOOL_H_

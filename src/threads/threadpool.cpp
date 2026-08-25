@@ -7,7 +7,7 @@
 #include <queue>
 #include <thread>
 
-namespace recsys {
+namespace recsys::knn_server {
 ThreadPool::ThreadPool(size_t num_threads) : pool_size_(num_threads) {
   for (size_t i = 0; i < num_threads; ++i) {
     threads_.emplace_back([this]() {
@@ -53,4 +53,4 @@ void ThreadPool::WaitForAll() {
     });
   }
 }
-}  // namespace recsys
+}  // namespace recsys::knn_server

@@ -9,7 +9,7 @@
 #include <queue>
 #include <vector>
 
-namespace recsys {
+namespace recsys::knn_server {
 
 FollyPool::FollyPool(size_t num_threads) : pool_size_(num_threads) {
   for (size_t i = 0; i < num_threads; ++i) {
@@ -68,4 +68,4 @@ void FollyPool::WaitForAll() {
   }
 }
 
-}  // namespace recsys
+}  // namespace recsys::knn_server

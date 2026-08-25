@@ -28,7 +28,7 @@ target_link_libraries(run_follypool_tests
               GTest::gtest_main
               Folly::folly
 )
-gtest_discover_tests(run_threadpool_tests DISCOVERY_MODE PRE_TEST)
+gtest_discover_tests(run_follypool_tests DISCOVERY_MODE PRE_TEST)
 
 add_executable(run_arena_tests arena_test.cpp)
 target_include_directories(run_arena_tests PRIVATE ${CMAKE_SOURCE_DIR})

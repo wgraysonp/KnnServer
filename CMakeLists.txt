@@ -3,20 +3,20 @@ project(RecSysEngine LANGUAGES CXX)
 
 # Require C++20
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_SiTANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(Boost_NO_BOOST_CMAKE OFF)
 
-list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew")
+if (APPLE)
+    list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew")
+endif()
 
 find_package(folly CONFIG REQUIRED)
 find_package(Threads REQUIRED)
+find_library(THRIFT_CPP2_LIB NAMES thriftcpp2 REQUIRED)
 
-# if(APPLE)
-#     include_directories(/opt/homebrew/include)
-#     link_directories(/opt/homebrew/lib)
-# endif()
+find_program(THRIFT_COMPILER_BIN NAMES thrift1 REQUIRED)
 
 add_subdirectory(src/data)
 add_subdirectory(src/service)
@@ -77,6 +77,7 @@ target_link_libraries(recsys_app PRIVATE
           threads
           service_module
           data_module
+          ${THRIFT_CPP2_LIB}
           Folly::folly
           Folly::folly_deps
           Threads::Threads

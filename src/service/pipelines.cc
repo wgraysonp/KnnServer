@@ -2,15 +2,16 @@
 
 #include <folly/Expected.h>
 
+#include <cstddef>
 #include <memory>
 
 #include "src/arena.h"
-#include "src/data/structs.h"
-#include "src/data/types.h"
-#include "src/macros.h"
+#include "src/data/consts.h"
+#include "src/data/gen-cpp2/data_types.h"
+#include "src/service/gen-cpp2/service_types.h"
 #include "src/service/service_utils.h"
 
-namespace recsys {
+namespace recsys::knn_server {
 
 folly::Expected<std::unique_ptr<MemoryArena>, StartupError>
 StartServiceAndCreateArena(const size_t item_count, const size_t embedding_dim,
@@ -37,11 +38,13 @@ ProcessRequestAndReturnSearchResults(const MemoryArena& arena,
   // 4. package response and return it
 
   // temp placeholder to keep Werror Wunused-parameter from complaining
-  if (arena.GetEmbeddingDim() != request.embedding_dim) {
+  if (arena.GetEmbeddingDim() != request.embedding_dim_ref()) {
     return folly::makeUnexpected(SearchRequestError::InvalidRawDataSizeError);
   }
 
   // temp placeholder
-  return QueryResponse{ResponseStatus::StatusOk};
+  QueryResponse response;
+  response.status_ref() = ResponseStatus::StatusOk;
+  return response;
 }
-}  // namespace recsys
+}  // namespace recsys::knn_server

@@ -2,9 +2,9 @@
 
 #include <cstddef>
 
-#include "src/data/types.h"
+#include "src/data/gen-cpp2/data_types.h"
 
-namespace recsys {
+namespace recsys::knn_server {
 
 size_t GetTypeSize(EmbeddingDataType type) {
   switch (type) {
@@ -15,4 +15,4 @@ size_t GetTypeSize(EmbeddingDataType type) {
   }
 }
 
-}  // namespace recsys
+}  // namespace recsys::knn_server

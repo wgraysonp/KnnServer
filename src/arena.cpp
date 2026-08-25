@@ -11,12 +11,12 @@
 #include <span>
 #include <stdexcept>
 
-#include "src/data/structs.h"
-#include "src/data/types.h"
+#include "src/data/consts.h"
 #include "src/data/data_utils.h"
+#include "src/data/gen-cpp2/data_types.h"
 #include "src/macros.h"
 
-namespace recsys {
+namespace recsys::knn_server {
 MemoryArena::MemoryArena(size_t capacity, size_t embedding_dim,
                          EmbeddingDataType type)
     : type_(type), capacity_(capacity), embedding_dim_(embedding_dim) {
@@ -92,4 +92,4 @@ MemoryArena::MakeArena(size_t capacity, size_t embedding_dim,
     return folly::makeUnexpected(StartupError::Unknown);
   }
 }
-}  // namespace recsys
+}  // namespace recsys::knn_server

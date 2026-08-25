@@ -9,12 +9,12 @@
 #include <memory>
 #include <span>
 
+#include "src/data/consts.h"
 #include "src/data/structs.h"
-#include "src/data/types.h"
 
 class MemoryArenaTests : public ::testing::Test {};
 
-using namespace recsys;
+using namespace recsys::knn_server;
 
 TEST_F(MemoryArenaTests,
        MakeArenaFailsIfEmbeddingDimensionNotAMultipleOfSixteen) {
@@ -85,7 +85,7 @@ TEST_F(MemoryArenaTests, SetDoubleEntryFailsWithInvalidEmbeddingDataType) {
 template <typename T>
 class MemoryArenaTypedTests : public ::testing::Test {};
 
-using namespace recsys;
+using namespace recsys::knn_server;
 using ::testing::FloatEq;
 using ::testing::Pointwise;
 using ImplementationType = ::testing::Types<float, double>;

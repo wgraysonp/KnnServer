@@ -7,7 +7,7 @@
 
 #include "src/threads/custom_folly_pool.h"
 
-using namespace recsys;
+using namespace recsys::knn_server;
 
 class FollyPoolTests : public ::testing::Test {
  protected:
@@ -47,7 +47,6 @@ TEST_F(FollyPoolTests, FollyExceptionsAreIsolated) {
 }
 
 TEST_F(FollyPoolTests, FollysDoBasicTaskAndReturnValueCorrectly) {
-
   std::vector<int> vec1 = {2, 3, 1};
   std::vector<int> vec2 = {1, 3, 2};
   std::vector<int> vec3 = {3, 2, 1};
@@ -85,10 +84,9 @@ TEST_F(FollyPoolTests, FollysDoBasicTaskAndReturnValueCorrectly) {
 
   std::vector<std::vector<int>> results = folly::collect(results_futures).get();
 
-    ASSERT_EQ(results.size(), 3);
+  ASSERT_EQ(results.size(), 3);
 
-    EXPECT_EQ(results.at(0), sorted_vec);
-    EXPECT_EQ(results.at(1), sorted_vec);
-    EXPECT_EQ(results.at(2), sorted_vec);
-
+  EXPECT_EQ(results.at(0), sorted_vec);
+  EXPECT_EQ(results.at(1), sorted_vec);
+  EXPECT_EQ(results.at(2), sorted_vec);
 }

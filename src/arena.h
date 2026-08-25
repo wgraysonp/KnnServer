@@ -10,10 +10,10 @@
 #include <new>
 #include <span>
 
-#include "src/data/structs.h"
-#include "src/data/types.h"
+#include "src/data/consts.h"
+#include "src/data/gen-cpp2/data_types.h"
 
-namespace recsys {
+namespace recsys::knn_server {
 
 class MemoryArena {
  public:
@@ -77,6 +77,6 @@ class MemoryArena {
   size_t type_size_;
 };
 
-}  // namespace recsys
+}  // namespace recsys::knn_server
 
 #endif  // RECSYS_ENGINE_ARENA_H_

@@ -6,7 +6,7 @@
 #include <atomic>
 #include <exception>
 
-using namespace recsys;
+using namespace recsys::knn_server;
 
 class ThreadPoolTests : public ::testing::Test {};
 
