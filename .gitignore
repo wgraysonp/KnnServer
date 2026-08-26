@@ -1,0 +1,32 @@
+# CMake build directory
+/build/
+/build-debug/
+/build_debug/
+/build_release/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Object files
+*.o
+*.obj
+*.so
+*.a
+*.dylib
+
+# Editor backup / temporary files
+*~
+*.swp
+*.swo
+.DS_Store
+
+# fbthrift generated C++ directories
+**/gen-cpp2/
