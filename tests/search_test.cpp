@@ -4,6 +4,7 @@
 #include <folly/FBVector.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <stdint.h>
 
 #include <cmath>
 #include <cstddef>
@@ -108,9 +109,9 @@ TYPED_TEST(SearchTests, FindNClosestFindsTheCloserOfFourEmbeddings) {
   expected_closest.distance_ref() = 0;
 
   ASSERT_EQ(res.size(), 1);
-  ASSERT_EQ(res[0].id_ref().value(), expected_closest.id);
+  ASSERT_EQ(res[0].id_ref().value(), expected_closest.id_ref().value());
   ASSERT_THAT(res[0].distance_ref().value(),
-              IsNearlyEqual(expected_closest.dist));
+              IsNearlyEqual(expected_closest.distance_ref().value()));
 }
 
 TYPED_TEST(SearchTests,
@@ -136,12 +137,14 @@ TYPED_TEST(SearchTests,
   folly::fbvector<EmbeddingSearchResult> res =
       FindNClosest(*Base::arena, query_vec, n_closest, n_workers);
 
-  EmbeddingSearchResult expected_closest =
-      EmbeddingSearchResult{.id = 1, .dist = 0};
+  EmbeddingSearchResult expected_closest;
+  expected_closest.id_ref() = 1;
+  expected_closest.distance_ref() = 0;
 
   ASSERT_EQ(res.size(), 1);
-  EXPECT_EQ(res[0].id, expected_closest.id);
-  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_closest.dist));
+  EXPECT_EQ(res[0].id_ref().value(), expected_closest.id_ref().value());
+  EXPECT_THAT(res[0].distance_ref().value(),
+              IsNearlyEqual(expected_closest.distance_ref().value()));
 }
 
 TYPED_TEST(
@@ -176,8 +179,9 @@ TYPED_TEST(
   expected_closest.distance_ref() = 0;
 
   ASSERT_EQ(res.size(), 1);
-  EXPECT_EQ(res[0].id, expected_closest.id);
-  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_closest.dist));
+  EXPECT_EQ(res[0].id_ref().value(), expected_closest.id_ref().value());
+  EXPECT_THAT(res[0].distance_ref().value(),
+              IsNearlyEqual(expected_closest.distance_ref().value()));
 }
 
 TYPED_TEST(
@@ -214,27 +218,39 @@ TYPED_TEST(
   // 3. embedding_2 - distance 16*0.2^2
   // 4. embedding_3 - distance 16*0.3^2
 
-  EmbeddingSearchResult expected_1 = EmbeddingSearchResult{.id = 1, .dist = 0};
-  EmbeddingSearchResult expected_2 =
-      EmbeddingSearchResult{.id = 0, .dist = 16 * 0.1 * 0.1};
-  EmbeddingSearchResult expected_3 =
-      EmbeddingSearchResult{.id = 2, .dist = 16 * 0.2 * 0.2};
-  EmbeddingSearchResult expected_4 =
-      EmbeddingSearchResult{.id = 3, .dist = 16 * 0.3 * 0.3};
+  EmbeddingSearchResult expected_1;
+  expected_1.id_ref() = 1;
+  expected_1.distance_ref() = 0;
+
+  EmbeddingSearchResult expected_2;
+  expected_2.id_ref() = 0;
+  expected_2.distance_ref() = 16 * 0.1 * 0.1;
+
+  EmbeddingSearchResult expected_3;
+  expected_3.id_ref() = 2;
+  expected_3.distance_ref() = 16 * 0.2 * 0.2;
+
+  EmbeddingSearchResult expected_4;
+  expected_4.id_ref() = 3;
+  expected_4.distance_ref() = 16 * 0.3 * 0.3;
 
   ASSERT_EQ(res.size(), 4);
 
-  EXPECT_EQ(res[0].id, expected_1.id);
-  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_1.dist));
+  EXPECT_EQ(res[0].id_ref().value(), expected_1.id_ref().value());
+  EXPECT_THAT(res[0].distance_ref().value(),
+              IsNearlyEqual(expected_1.distance_ref().value()));
 
-  EXPECT_EQ(res[1].id, expected_2.id);
-  EXPECT_THAT(res[1].dist, IsNearlyEqual(expected_2.dist));
+  EXPECT_EQ(res[1].id_ref().value(), expected_2.id_ref().value());
+  EXPECT_THAT(res[1].distance_ref().value(),
+              IsNearlyEqual(expected_2.distance_ref().value()));
 
-  EXPECT_EQ(res[2].id, expected_3.id);
-  EXPECT_THAT(res[2].dist, IsNearlyEqual(expected_3.dist));
+  EXPECT_EQ(res[2].id_ref().value(), expected_3.id_ref().value());
+  EXPECT_THAT(res[2].distance_ref().value(),
+              IsNearlyEqual(expected_3.distance_ref().value()));
 
-  EXPECT_EQ(res[3].id, expected_4.id);
-  EXPECT_THAT(res[3].dist, IsNearlyEqual(expected_4.dist));
+  EXPECT_EQ(res[3].id_ref().value(), expected_4.id_ref().value());
+  EXPECT_THAT(res[3].distance_ref().value(),
+              IsNearlyEqual(expected_4.distance_ref().value()));
 }
 
 TYPED_TEST(
@@ -281,27 +297,39 @@ TYPED_TEST(
   // 3. embedding_2 - distance 16*0.2^2
   // 4. embedding_3 - distance 16*0.3^2
 
-  EmbeddingSearchResult expected_1 = EmbeddingSearchResult{.id = 1, .dist = 0};
-  EmbeddingSearchResult expected_2 =
-      EmbeddingSearchResult{.id = 0, .dist = 16 * 0.1 * 0.1};
-  EmbeddingSearchResult expected_3 =
-      EmbeddingSearchResult{.id = 2, .dist = 16 * 0.2 * 0.2};
-  EmbeddingSearchResult expected_4 =
-      EmbeddingSearchResult{.id = 3, .dist = 16 * 0.3 * 0.3};
+  EmbeddingSearchResult expected_1;
+  expected_1.id_ref() = 1;
+  expected_1.distance_ref() = 0;
+
+  EmbeddingSearchResult expected_2;
+  expected_2.id_ref() = 0;
+  expected_2.distance_ref() = 16 * 0.1 * 0.1;
+
+  EmbeddingSearchResult expected_3;
+  expected_3.id_ref() = 2;
+  expected_3.distance_ref() = 16 * 0.2 * 0.2;
+
+  EmbeddingSearchResult expected_4;
+  expected_4.id_ref() = 3;
+  expected_4.distance_ref() = 16 * 0.3 * 0.3;
 
   ASSERT_EQ(res.size(), 4);
 
-  EXPECT_EQ(res[0].id, expected_1.id);
-  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_1.dist));
+  EXPECT_EQ(res[0].id_ref().value(), expected_1.id_ref().value());
+  EXPECT_THAT(res[0].distance_ref().value(),
+              IsNearlyEqual(expected_1.distance_ref().value()));
 
-  EXPECT_EQ(res[1].id, expected_2.id);
-  EXPECT_THAT(res[1].dist, IsNearlyEqual(expected_2.dist));
+  EXPECT_EQ(res[1].id_ref().value(), expected_2.id_ref().value());
+  EXPECT_THAT(res[1].distance_ref().value(),
+              IsNearlyEqual(expected_2.distance_ref().value()));
 
-  EXPECT_EQ(res[2].id, expected_3.id);
-  EXPECT_THAT(res[2].dist, IsNearlyEqual(expected_3.dist));
+  EXPECT_EQ(res[2].id_ref().value(), expected_3.id_ref().value());
+  EXPECT_THAT(res[2].distance_ref().value(),
+              IsNearlyEqual(expected_3.distance_ref().value()));
 
-  EXPECT_EQ(res[3].id, expected_4.id);
-  EXPECT_THAT(res[3].dist, IsNearlyEqual(expected_4.dist));
+  EXPECT_EQ(res[3].id_ref().value(), expected_4.id_ref().value());
+  EXPECT_THAT(res[3].distance_ref().value(),
+              IsNearlyEqual(expected_4.distance_ref().value()));
 }
 
 TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreads) {
@@ -337,8 +365,10 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreads) {
     auto it = closest_indices.find(val);
     if (it != closest_indices.end()) {
       // store dist as val^2 since the search returns squared distance
-      it->second = EmbeddingSearchResult{
-          .id = idx, .dist = static_cast<TypeParam>(val * val)};
+      EmbeddingSearchResult res;
+      res.id() = idx;
+      res.distance() = static_cast<TypeParam>(val * val);
+      it->second = res;
     }
   }
 
@@ -368,17 +398,21 @@ TYPED_TEST(SearchTests, FindNClosestSuceedsWithLargeLibraryAndMultipleThreads) {
 
   ASSERT_EQ(res.size(), 4);
 
-  EXPECT_EQ(res[0].id, expected_1.id);
-  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_1.dist));
+  EXPECT_EQ(res[0].id_ref().value(), expected_1.id_ref().value());
+  EXPECT_THAT(res[0].distance_ref().value(),
+              IsNearlyEqual(expected_1.distance_ref().value()));
 
-  EXPECT_EQ(res[1].id, expected_2.id);
-  EXPECT_THAT(res[1].dist, IsNearlyEqual(expected_2.dist));
+  EXPECT_EQ(res[1].id_ref().value(), expected_2.id_ref().value());
+  EXPECT_THAT(res[1].distance_ref().value(),
+              IsNearlyEqual(expected_2.distance_ref().value()));
 
-  EXPECT_EQ(res[2].id, expected_3.id);
-  EXPECT_THAT(res[2].dist, IsNearlyEqual(expected_3.dist));
+  EXPECT_EQ(res[2].id_ref().value(), expected_3.id_ref().value());
+  EXPECT_THAT(res[2].distance_ref().value(),
+              IsNearlyEqual(expected_3.distance_ref().value()));
 
-  EXPECT_EQ(res[3].id, expected_4.id);
-  EXPECT_THAT(res[3].dist, IsNearlyEqual(expected_4.dist));
+  EXPECT_EQ(res[3].id_ref().value(), expected_4.id_ref().value());
+  EXPECT_THAT(res[3].distance_ref().value(),
+              IsNearlyEqual(expected_4.distance_ref().value()));
 }
 
 TYPED_TEST(
@@ -417,7 +451,11 @@ TYPED_TEST(
 
       // push the EmbeddingSearchResult struct onto the vector. This should
       // ensure they are in proper order sorted by the fall back id
-      closest_embeddings.push_back({.id = idx, .dist = 0});
+      EmbeddingSearchResult res;
+      res.id_ref() = idx;
+      res.distance_ref() = 0;
+
+      closest_embeddings.push_back(res);
     } else {
       // otherwise, se the first coordinate equal to unique val and the rest
       // zero
@@ -442,15 +480,19 @@ TYPED_TEST(
 
   ASSERT_EQ(res.size(), 4);
 
-  EXPECT_EQ(res[0].id, expected_1.id);
-  EXPECT_THAT(res[0].dist, IsNearlyEqual(expected_1.dist));
+  EXPECT_EQ(res[0].id_ref().value(), expected_1.id_ref().value());
+  EXPECT_THAT(res[0].distance_ref().value(),
+              IsNearlyEqual(expected_1.distance_ref().value()));
 
-  EXPECT_EQ(res[1].id, expected_2.id);
-  EXPECT_THAT(res[1].dist, IsNearlyEqual(expected_2.dist));
+  EXPECT_EQ(res[1].id_ref().value(), expected_2.id_ref().value());
+  EXPECT_THAT(res[1].distance_ref().value(),
+              IsNearlyEqual(expected_2.distance_ref().value()));
 
-  EXPECT_EQ(res[2].id, expected_3.id);
-  EXPECT_THAT(res[2].dist, IsNearlyEqual(expected_3.dist));
+  EXPECT_EQ(res[2].id_ref().value(), expected_3.id_ref().value());
+  EXPECT_THAT(res[2].distance_ref().value(),
+              IsNearlyEqual(expected_3.distance_ref().value()));
 
-  EXPECT_EQ(res[3].id, expected_4.id);
-  EXPECT_THAT(res[3].dist, IsNearlyEqual(expected_4.dist));
+  EXPECT_EQ(res[3].id_ref().value(), expected_4.id_ref().value());
+  EXPECT_THAT(res[3].distance_ref().value(),
+              IsNearlyEqual(expected_4.distance_ref().value()));
 }
