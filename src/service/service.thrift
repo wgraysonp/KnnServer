@@ -20,7 +20,7 @@ enum ResponseStatus {
 
 struct QueryResponse {
   1: ResponseStatus status;
-  2: i64 micros_passed;
+  2: i64 milli_seconds_passed;
   3: list<data.EmbeddingSearchResult> results;
 }
 

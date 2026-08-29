@@ -26,10 +26,10 @@ class MemoryArena {
   size_t GetCapacity() const { return capacity_; }
   size_t GetEmbeddingDim() const { return embedding_dim_; }
   size_t GetTotalActiveEmbeddings() const { return active_ids_.size(); }
+  EmbeddingDataType GetArenaEmbeddingType() const { return type_; }
   const folly::fbvector<unsigned long>& GetActiveIds() const {
     return active_ids_;
   }
-
   const folly::fbvector<bool>& GetIdStatusMap() const { return is_id_active_; }
 
   template <typename T>

@@ -11,13 +11,13 @@
 #include "src/data/gen-cpp2/data_types.h"
 #include "src/macros.h"
 #include "src/search.h"
+#include "src/service/gen-cpp2/service_types.h"
 #include "src/service/pipelines.h"
 
 using namespace recsys::knn_server;
 
 int main() {
-  std::cout << "Initializing memory arena via Cmake configuration..."
-            << std::endl;
+  std::cout << "Initializing memory arena..." << std::endl;
 
   size_t item_count = 1000000;
 
@@ -29,20 +29,26 @@ int main() {
 
   std::cout << "Initialization complete. Starting search" << std::endl;
 
-  folly::fbvector<float> query_vector(EMBEDDING_DIM, 0.5f);
+  std::vector<float> query_vector(EMBEDDING_DIM, 0.5f);
 
-  auto start = std::chrono::high_resolution_clock::now();
+  QueryRequest request;
+  request.raw_query_vector_ref() =
+      std::string(reinterpret_cast<const char*>(query_vector.data()),
+                  query_vector.size() * sizeof(float));
+  request.type_ref() = EmbeddingDataType::Float32_t;
+  request.library_id_ref() = 1;
+  request.embedding_dim_ref() = 128;
+  request.n_closest_ref() = 10;
 
-  folly::fbvector<EmbeddingSearchResult> result =
-      FindNClosest(*arena, query_vector, 10);
+  QueryResponse response;
 
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> duration = end - start;
+  CHECK_OK(ProcessRequestAndPopulateResponse(*arena, request, response));
 
-  std::cout << "KNN Search took: " << duration.count() << " ms\n";
+  std::cout << "KNN Search took: "
+            << response.milli_seconds_passed_ref().value() << " ms\n";
 
-  printf("Number of Items: %lu\n", result.size());
-  for (const auto& item : result) {
+  printf("Number of Items: %lu\n", response.results_ref()->size());
+  for (const auto& item : *response.results_ref()) {
     printf("Vector id: %lu\n", item.id_ref().value());
   }
 

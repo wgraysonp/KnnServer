@@ -18,9 +18,10 @@ folly::Expected<std::unique_ptr<MemoryArena>, StartupError>
 StartServiceAndCreateArena(const size_t item_count, const size_t embedding_dim,
                            const EmbeddingDataType& type);
 
-folly::Expected<QueryResponse, SearchRequestError>
-ProcessRequestAndReturnSearchResults(const MemoryArena& arena,
-                                     const QueryRequest& request);
+folly::Expected<folly::Unit, SearchRequestError>
+ProcessRequestAndPopulateResponse(const MemoryArena& arena,
+                                  const QueryRequest& request,
+                                  QueryResponse& mutable_response);
 
 }  // namespace recsys::knn_server
 #endif  // RECSYS_ENGINE_SERVICE_PIPELINES_H_

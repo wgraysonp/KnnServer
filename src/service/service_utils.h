@@ -6,7 +6,9 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "src/arena.h"
 #include "src/data/consts.h"
+#include "src/data/data_utils.h"
 #include "src/data/gen-cpp2/data_types.h"
 #include "src/data/structs.h"
 #include "src/service/gen-cpp2/service_types.h"
@@ -27,6 +29,10 @@ folly::Expected<folly::Unit, SearchRequestError> ValidateRequestSearchLibrary(
 // TODO: This should be updated to handle a full http or protobuf request
 folly::Expected<folly::Unit, SearchRequestError> ValidateSearchRequest(
     const QueryRequest& request);
+
+void PerformSearchAndPopulateResponse(const MemoryArena& arena,
+                                      const QueryRequest& request,
+                                      QueryResponse& mutable_response);
 
 }  // namespace recsys::knn_server
 

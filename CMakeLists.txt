@@ -84,7 +84,6 @@ target_link_libraries(recsys_app PRIVATE
  )
  target_include_directories(recsys_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-option(BUILD_TESTING "Build the test suite" ON)
-if(BUILD_TESTING)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_subdirectory(tests)
 endif()
